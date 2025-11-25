@@ -14,7 +14,7 @@
         }
 
         .container {
-            max-width: 520px;
+            max-width: 900px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
@@ -58,20 +58,33 @@
         }
 
         button {
-            width: 100%;
-            padding: 10px 12px;
+            padding: 8px 12px;
             border-radius: 8px;
             border: none;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
+        }
+
+        button.primary {
+            width: 100%;
             background: #16a34a;
             color: white;
         }
 
-        button:disabled {
+        button.primary:disabled {
             opacity: 0.6;
             cursor: default;
+        }
+
+        button.danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        button.secondary {
+            background: #e5e7eb;
+            color: #111827;
         }
 
         .message {
@@ -88,9 +101,42 @@
             color: #b91c1c;
         }
 
+        h2 {
+            margin-top: 32px;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+
+        .plates-cell {
+            white-space: pre-line;
+            font-family: monospace;
+        }
+
         .nav {
             text-align: center;
-            margin-top: 12px;
+            margin-top: 20px;
             font-size: 0.9rem;
         }
 
@@ -101,6 +147,21 @@
 
         .nav a:hover {
             text-decoration: underline;
+        }
+
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            background: #e5e7eb;
+            color: #374151;
         }
     </style>
 </head>
@@ -129,13 +190,17 @@
                 required
         ></textarea>
 
-        <button type="submit" id="submit-btn">Save mapping</button>
+        <button type="submit" id="submit-btn" class="primary">Save mapping</button>
     </form>
 
     <div id="message" class="message"></div>
 
+    <h2>Existing residents</h2>
+    <div id="residentsContainer">Loading...</div>
+
     <div class="nav">
-        <a href="/">← Back to scan page</a>
+        <a href="/">← Back to scan page</a> ·
+        <a href="/stats.html">Session stats</a>
     </div>
 </div>
 
@@ -143,14 +208,15 @@
     const form = document.getElementById('resident-form');
     const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
+    const residentsContainer = document.getElementById('residentsContainer');
+
+    const uniqueCodeInput = document.getElementById('uniqueCode');
+    const platesInput = document.getElementById('plates');
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         messageEl.textContent = '';
         messageEl.className = 'message';
-
-        const uniqueCodeInput = document.getElementById('uniqueCode');
-        const platesInput = document.getElementById('plates');
 
         const uniqueCode = uniqueCodeInput.value.trim();
         const rawPlates = platesInput.value;
@@ -161,7 +227,6 @@
             return;
         }
 
-        // virgül + newline’e göre split
         const licensePlates = rawPlates
             .split(/[\n,]+/)
             .map(p => p.trim().toUpperCase())
@@ -186,9 +251,10 @@
             });
 
             if (response.ok) {
-                messageEl.textContent = 'Resident mapping saved ✅';
+                messageEl.textContent = 'Resident mapping saved ✅ (list refreshed)';
                 messageEl.classList.add('success');
                 platesInput.value = '';
+                await loadResidents();
             } else {
                 messageEl.textContent = 'Error: ' + response.status;
                 messageEl.classList.add('error');
@@ -201,6 +267,109 @@
             submitBtn.textContent = 'Save mapping';
         }
     });
+
+    async function loadResidents() {
+        residentsContainer.textContent = 'Loading...';
+        try {
+            const response = await fetch('/residents');
+            if (!response.ok) {
+                residentsContainer.textContent = 'Error loading residents: ' + response.status;
+                return;
+            }
+
+            const residents = await response.json();
+            if (residents.length === 0) {
+                residentsContainer.textContent = 'No residents yet.';
+                return;
+            }
+
+            const table = document.createElement('table');
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>ID</th>
+                    <th>Unique code</th>
+                    <th>Plates</th>
+                    <th>Actions</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+
+            residents.forEach(r => {
+                const tr = document.createElement('tr');
+
+                const tdId = document.createElement('td');
+                tdId.textContent = r.id;
+                tr.appendChild(tdId);
+
+                const tdCode = document.createElement('td');
+                tdCode.innerHTML = `<span class="tag">${r.uniqueCode}</span>`;
+                tr.appendChild(tdCode);
+
+                const tdPlates = document.createElement('td');
+                tdPlates.classList.add('plates-cell');
+                tdPlates.textContent = (r.licensePlates && r.licensePlates.length > 0)
+                    ? r.licensePlates.join('\\n')
+                    : '';
+                tr.appendChild(tdPlates);
+
+                const tdActions = document.createElement('td');
+                tdActions.classList.add('actions');
+
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.classList.add('secondary');
+                editBtn.addEventListener('click', () => {
+                    uniqueCodeInput.value = r.uniqueCode;
+                    platesInput.value = (r.licensePlates || []).join('\\n');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    messageEl.textContent = 'Editing resident ' + r.uniqueCode;
+                    messageEl.className = 'message';
+                });
+                tdActions.appendChild(editBtn);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.classList.add('danger');
+                deleteBtn.addEventListener('click', async () => {
+                    if (!confirm(`Delete resident ${r.uniqueCode} and all its plates?`)) {
+                        return;
+                    }
+                    try {
+                        const delRes = await fetch(`/residents/${r.id}`, {
+                            method: 'DELETE'
+                        });
+                        if (delRes.ok || delRes.status === 204) {
+                            messageEl.textContent = 'Resident deleted ✅';
+                            messageEl.className = 'message success';
+                            await loadResidents();
+                        } else {
+                            messageEl.textContent = 'Error deleting resident: ' + delRes.status;
+                            messageEl.className = 'message error';
+                        }
+                    } catch (err) {
+                        messageEl.textContent = 'Network error: ' + err.message;
+                        messageEl.className = 'message error';
+                    }
+                });
+                tdActions.appendChild(deleteBtn);
+
+                tr.appendChild(tdActions);
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(tbody);
+            residentsContainer.innerHTML = '';
+            residentsContainer.appendChild(table);
+        } catch (err) {
+            residentsContainer.textContent = 'Network error: ' + err.message;
+        }
+    }
+
+    loadResidents();
 </script>
 </body>
 </html>

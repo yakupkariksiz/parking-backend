@@ -1,12 +1,16 @@
 package com.example.parking.service;
 
 import com.example.parking.dto.ResidentPlatesRequest;
+import com.example.parking.dto.ResidentWithPlatesResponse;
 import com.example.parking.model.Resident;
 import com.example.parking.model.Vehicle;
 import com.example.parking.repository.ResidentRepository;
 import com.example.parking.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ResidentService {
@@ -22,28 +26,64 @@ public class ResidentService {
 
     @Transactional
     public void addOrUpdatePlatesForResident(String uniqueCode, ResidentPlatesRequest request) {
-        // find or create resident
         Resident resident = residentRepository.findByUniqueCode(uniqueCode)
-                .orElseGet(() -> {
-                    Resident r = new Resident(uniqueCode);
-                    return residentRepository.save(r);
-                });
+                .orElseGet(() -> residentRepository.save(new Resident(uniqueCode)));
 
         if (request.licensePlates() == null) {
             return;
         }
 
-        for (String plateRaw : request.licensePlates()) {
-            if (plateRaw == null || plateRaw.isBlank()) continue;
+        // hedef plaka listesi (normalize + tekrarları temizle)
+        Set<String> targetPlates = request.licensePlates().stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .map(String::toUpperCase)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
-            String plate = plateRaw.trim().toUpperCase();
+        // mevcut plakaları al
+        List<Vehicle> currentVehicles = new ArrayList<>(resident.getVehicles());
 
+        // Artık listede olmayan plakaları kaldır
+        for (Vehicle v : currentVehicles) {
+            if (!targetPlates.contains(v.getLicensePlate())) {
+                resident.removeVehicle(v);
+                vehicleRepository.delete(v);
+            }
+        }
+
+        // Hedef listedeki her plaka için vehicle oluştur / reassignment
+        for (String plate : targetPlates) {
             Vehicle vehicle = vehicleRepository.findByLicensePlate(plate)
                     .orElseGet(() -> new Vehicle(plate, resident));
 
-            // if vehicle existed but was linked to another resident, reassign
+            // farklı bir resident'a bağlıysa, bu residente ata
             vehicle.setResident(resident);
             vehicleRepository.save(vehicle);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResidentWithPlatesResponse> getAllResidentsWithPlates() {
+        return residentRepository.findAll().stream()
+                .map(r -> new ResidentWithPlatesResponse(
+                        r.getId(),
+                        r.getUniqueCode(),
+                        r.getName(),
+                        r.getAddress(),
+                        r.getVehicles().stream()
+                                .map(Vehicle::getLicensePlate)
+                                .toList()
+                ))
+                .toList();
+    }
+
+    @Transactional
+    public void deleteResident(Long residentId) {
+        if (!residentRepository.existsById(residentId)) {
+            return;
+        }
+        residentRepository.deleteById(residentId);
+        // cascade + orphanRemoval sayesinde plakalar da silinecek
     }
 }

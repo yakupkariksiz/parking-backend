@@ -4,6 +4,7 @@
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/controller/ScanEntryController.java
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/controller/ScanSessionController.java
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/controller/StatsController.java
+/Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/dto/ResidentBulkDeleteRequest.java
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/dto/ResidentPlatesRequest.java
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/dto/ResidentWithPlatesResponse.java
 /Users/jacob/Downloads/parking-backend/src/main/java/com/example/parking/dto/ScanEntryRequest.java

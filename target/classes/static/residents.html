@@ -225,8 +225,10 @@
         <button id="prevPage">Previous</button>
         <button id="allPage">All</button>
         <button id="nextPage">Next</button>
+        <button id="deleteSelected" class="danger">Delete selected</button>
         <span class="page-info" id="pageInfo"></span>
     </div>
+
 
     <div class="nav">
         <a href="/">← Back to scan page</a> ·
@@ -247,12 +249,14 @@
     const prevPageBtn = document.getElementById('prevPage');
     const nextPageBtn = document.getElementById('nextPage');
     const allPageBtn = document.getElementById('allPage');
+    const deleteSelectedBtn = document.getElementById('deleteSelected');
     const pageInfoEl = document.getElementById('pageInfo');
 
     let allResidents = [];
     let currentPage = 1;
     const pageSize = 10; // normal sayfa boyutu
-    let showAll = false; // All mode
+    let showAll = false; // "All" modu
+    let selectedIds = new Set(); // toplu silme için seçili resident id'leri
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -312,8 +316,10 @@
     async function loadResidents() {
         residentsContainer.textContent = 'Loading...';
         paginationEl.style.display = 'none';
-        showAll = false;      // her load'da normal moda dön
+        showAll = false;
         currentPage = 1;
+        selectedIds.clear();
+        updateDeleteSelectedButton();
 
         try {
             const response = await fetch('/residents');
@@ -350,7 +356,6 @@
         let totalPages;
 
         if (showAll) {
-            // All mode: tüm kayıtlar tek sayfada
             pageItems = allResidents;
             totalPages = 1;
             currentPage = 1;
@@ -374,6 +379,9 @@
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr>
+                <th style="width:40px;">
+                    <input type="checkbox" id="selectAll">
+                </th>
                 <th>Unique code</th>
                 <th>Plates</th>
                 <th>Actions</th>
@@ -385,6 +393,28 @@
 
         pageItems.forEach(r => {
             const tr = document.createElement('tr');
+
+            // checkbox kolonu
+            const tdSelect = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.dataset.residentId = r.id;
+            checkbox.checked = selectedIds.has(r.id);
+            checkbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    selectedIds.add(r.id);
+                } else {
+                    selectedIds.delete(r.id);
+                }
+                updateDeleteSelectedButton();
+                // selectAll durumunu güncellemek için başlığı tekrar ayarlayacağız
+                const selectAllCheckbox = table.querySelector('#selectAll');
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = pageItems.every(item => selectedIds.has(item.id));
+                }
+            });
+            tdSelect.appendChild(checkbox);
+            tr.appendChild(tdSelect);
 
             const tdCode = document.createElement('td');
             tdCode.innerHTML = `<span class="tag">${r.uniqueCode}</span>`;
@@ -426,6 +456,7 @@
                     if (delRes.ok || delRes.status === 204) {
                         messageEl.textContent = 'Resident deleted ✅';
                         messageEl.className = 'message success';
+                        selectedIds.delete(r.id);
                         await loadResidents();
                     } else {
                         messageEl.textContent = 'Error deleting resident: ' + delRes.status;
@@ -445,6 +476,29 @@
         table.appendChild(tbody);
         residentsContainer.appendChild(table);
 
+        // selectAll checkbox davranışı
+        const selectAllCheckbox = table.querySelector('#selectAll');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = pageItems.every(item => selectedIds.has(item.id));
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                pageItems.forEach(r => {
+                    if (checked) {
+                        selectedIds.add(r.id);
+                    } else {
+                        selectedIds.delete(r.id);
+                    }
+                });
+                // satırlardaki tek tek checkbox'ları güncelle
+                const rowCheckboxes = table.querySelectorAll('input[type="checkbox"][data-resident-id]');
+                rowCheckboxes.forEach(cb => {
+                    const id = Number(cb.dataset.residentId);
+                    cb.checked = selectedIds.has(id);
+                });
+                updateDeleteSelectedButton();
+            });
+        }
+
         // pagination controls
         paginationEl.style.display = 'flex';
 
@@ -459,6 +513,18 @@
             prevPageBtn.disabled = currentPage === 1;
             nextPageBtn.disabled = currentPage === totalPages;
             allPageBtn.disabled = false;
+        }
+
+        updateDeleteSelectedButton();
+    }
+
+    function updateDeleteSelectedButton() {
+        if (selectedIds.size > 0) {
+            deleteSelectedBtn.disabled = false;
+            deleteSelectedBtn.textContent = `Delete selected (${selectedIds.size})`;
+        } else {
+            deleteSelectedBtn.disabled = true;
+            deleteSelectedBtn.textContent = 'Delete selected';
         }
     }
 
@@ -479,7 +545,39 @@
         renderResidentsPage();
     });
 
+    deleteSelectedBtn.addEventListener('click', async () => {
+        if (selectedIds.size === 0) {
+            return;
+        }
+        if (!confirm(`Delete ${selectedIds.size} residents and all their plates?`)) {
+            return;
+        }
+        try {
+            const ids = Array.from(selectedIds);
+            const res = await fetch('/residents/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ ids })
+            });
+            if (res.ok || res.status === 204) {
+                messageEl.textContent = 'Selected residents deleted ✅';
+                messageEl.className = 'message success';
+                selectedIds.clear();
+                await loadResidents();
+            } else {
+                messageEl.textContent = 'Error deleting selected residents: ' + res.status;
+                messageEl.className = 'message error';
+            }
+        } catch (err) {
+            messageEl.textContent = 'Network error: ' + err.message;
+            messageEl.className = 'message error';
+        }
+    });
+
     loadResidents();
 </script>
+
 </body>
 </html>

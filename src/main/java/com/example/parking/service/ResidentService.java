@@ -86,4 +86,13 @@ public class ResidentService {
         residentRepository.deleteById(residentId);
         // cascade + orphanRemoval sayesinde plakalar da silinecek
     }
+
+    @Transactional
+    public void deleteResidents(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        ids.forEach(residentRepository::deleteById);
+    }
+
 }

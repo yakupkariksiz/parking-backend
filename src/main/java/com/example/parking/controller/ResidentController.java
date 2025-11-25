@@ -1,5 +1,6 @@
 package com.example.parking.controller;
 
+import com.example.parking.dto.ResidentBulkDeleteRequest;
 import com.example.parking.dto.ResidentPlatesRequest;
 import com.example.parking.dto.ResidentWithPlatesResponse;
 import com.example.parking.service.ResidentService;
@@ -37,4 +38,11 @@ public class ResidentController {
         residentService.deleteResident(residentId);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<Void> bulkDelete(@RequestBody ResidentBulkDeleteRequest request) {
+        residentService.deleteResidents(request.ids());
+        return ResponseEntity.noContent().build();
+    }
+
 }

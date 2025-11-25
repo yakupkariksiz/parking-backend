@@ -14,6 +14,7 @@ com/example/parking/model/ScanEntry.class
 com/example/parking/dto/ScanEntryRequest.class
 com/example/parking/repository/ResidentRepository.class
 com/example/parking/dto/ResidentPlatesRequest.class
+com/example/parking/dto/ResidentBulkDeleteRequest.class
 com/example/parking/model/Resident.class
 com/example/parking/controller/PlateController.class
 com/example/parking/dto/SessionStatsResponse.class

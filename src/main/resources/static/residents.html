@@ -163,6 +163,30 @@
             background: #e5e7eb;
             color: #374151;
         }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
+        .pagination .page-info {
+            color: #4b5563;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +221,12 @@
 
     <h2>Existing residents</h2>
     <div id="residentsContainer">Loading...</div>
+    <div id="pagination" class="pagination" style="display:none;">
+        <button id="prevPage">Previous</button>
+        <button id="allPage">All</button>
+        <button id="nextPage">Next</button>
+        <span class="page-info" id="pageInfo"></span>
+    </div>
 
     <div class="nav">
         <a href="/">← Back to scan page</a> ·
@@ -212,6 +242,17 @@
 
     const uniqueCodeInput = document.getElementById('uniqueCode');
     const platesInput = document.getElementById('plates');
+
+    const paginationEl = document.getElementById('pagination');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const allPageBtn = document.getElementById('allPage');
+    const pageInfoEl = document.getElementById('pageInfo');
+
+    let allResidents = [];
+    let currentPage = 1;
+    const pageSize = 10; // normal sayfa boyutu
+    let showAll = false; // All mode
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -270,6 +311,10 @@
 
     async function loadResidents() {
         residentsContainer.textContent = 'Loading...';
+        paginationEl.style.display = 'none';
+        showAll = false;      // her load'da normal moda dön
+        currentPage = 1;
+
         try {
             const response = await fetch('/residents');
             if (!response.ok) {
@@ -278,96 +323,161 @@
             }
 
             const residents = await response.json();
-            if (residents.length === 0) {
+            allResidents = residents;
+            if (allResidents.length === 0) {
                 residentsContainer.textContent = 'No residents yet.';
                 return;
             }
 
-            const table = document.createElement('table');
-
-            const thead = document.createElement('thead');
-            thead.innerHTML = `
-                <tr>
-                    <th>ID</th>
-                    <th>Unique code</th>
-                    <th>Plates</th>
-                    <th>Actions</th>
-                </tr>
-            `;
-            table.appendChild(thead);
-
-            const tbody = document.createElement('tbody');
-
-            residents.forEach(r => {
-                const tr = document.createElement('tr');
-
-                const tdId = document.createElement('td');
-                tdId.textContent = r.id;
-                tr.appendChild(tdId);
-
-                const tdCode = document.createElement('td');
-                tdCode.innerHTML = `<span class="tag">${r.uniqueCode}</span>`;
-                tr.appendChild(tdCode);
-
-                const tdPlates = document.createElement('td');
-                tdPlates.classList.add('plates-cell');
-                tdPlates.textContent = (r.licensePlates && r.licensePlates.length > 0)
-                    ? r.licensePlates.join('\\n')
-                    : '';
-                tr.appendChild(tdPlates);
-
-                const tdActions = document.createElement('td');
-                tdActions.classList.add('actions');
-
-                const editBtn = document.createElement('button');
-                editBtn.textContent = 'Edit';
-                editBtn.classList.add('secondary');
-                editBtn.addEventListener('click', () => {
-                    uniqueCodeInput.value = r.uniqueCode;
-                    platesInput.value = (r.licensePlates || []).join('\\n');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    messageEl.textContent = 'Editing resident ' + r.uniqueCode;
-                    messageEl.className = 'message';
-                });
-                tdActions.appendChild(editBtn);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.classList.add('danger');
-                deleteBtn.addEventListener('click', async () => {
-                    if (!confirm(`Delete resident ${r.uniqueCode} and all its plates?`)) {
-                        return;
-                    }
-                    try {
-                        const delRes = await fetch(`/residents/${r.id}`, {
-                            method: 'DELETE'
-                        });
-                        if (delRes.ok || delRes.status === 204) {
-                            messageEl.textContent = 'Resident deleted ✅';
-                            messageEl.className = 'message success';
-                            await loadResidents();
-                        } else {
-                            messageEl.textContent = 'Error deleting resident: ' + delRes.status;
-                            messageEl.className = 'message error';
-                        }
-                    } catch (err) {
-                        messageEl.textContent = 'Network error: ' + err.message;
-                        messageEl.className = 'message error';
-                    }
-                });
-                tdActions.appendChild(deleteBtn);
-
-                tr.appendChild(tdActions);
-                tbody.appendChild(tr);
-            });
-
-            table.appendChild(tbody);
-            residentsContainer.innerHTML = '';
-            residentsContainer.appendChild(table);
+            renderResidentsPage();
         } catch (err) {
             residentsContainer.textContent = 'Network error: ' + err.message;
         }
     }
+
+    function renderResidentsPage() {
+        residentsContainer.innerHTML = '';
+
+        const total = allResidents.length;
+
+        if (total === 0) {
+            residentsContainer.textContent = 'No residents yet.';
+            paginationEl.style.display = 'none';
+            return;
+        }
+
+        let pageItems;
+        let totalPages;
+
+        if (showAll) {
+            // All mode: tüm kayıtlar tek sayfada
+            pageItems = allResidents;
+            totalPages = 1;
+            currentPage = 1;
+        } else {
+            totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+            if (currentPage < 1) {
+                currentPage = 1;
+            }
+
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = startIndex + pageSize;
+            pageItems = allResidents.slice(startIndex, endIndex);
+        }
+
+        const table = document.createElement('table');
+
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>Unique code</th>
+                <th>Plates</th>
+                <th>Actions</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+
+        pageItems.forEach(r => {
+            const tr = document.createElement('tr');
+
+            const tdCode = document.createElement('td');
+            tdCode.innerHTML = `<span class="tag">${r.uniqueCode}</span>`;
+            tr.appendChild(tdCode);
+
+            const tdPlates = document.createElement('td');
+            tdPlates.classList.add('plates-cell');
+            tdPlates.textContent = (r.licensePlates && r.licensePlates.length > 0)
+                ? r.licensePlates.join('\n')
+                : '';
+            tr.appendChild(tdPlates);
+
+            const tdActions = document.createElement('td');
+            tdActions.classList.add('actions');
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.classList.add('secondary');
+            editBtn.addEventListener('click', () => {
+                uniqueCodeInput.value = r.uniqueCode;
+                platesInput.value = (r.licensePlates || []).join('\n');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                messageEl.textContent = 'Editing resident ' + r.uniqueCode;
+                messageEl.className = 'message';
+            });
+            tdActions.appendChild(editBtn);
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.classList.add('danger');
+            deleteBtn.addEventListener('click', async () => {
+                if (!confirm(`Delete resident ${r.uniqueCode} and all its plates?`)) {
+                    return;
+                }
+                try {
+                    const delRes = await fetch(`/residents/${r.id}`, {
+                        method: 'DELETE'
+                    });
+                    if (delRes.ok || delRes.status === 204) {
+                        messageEl.textContent = 'Resident deleted ✅';
+                        messageEl.className = 'message success';
+                        await loadResidents();
+                    } else {
+                        messageEl.textContent = 'Error deleting resident: ' + delRes.status;
+                        messageEl.className = 'message error';
+                    }
+                } catch (err) {
+                    messageEl.textContent = 'Network error: ' + err.message;
+                    messageEl.className = 'message error';
+                }
+            });
+            tdActions.appendChild(deleteBtn);
+
+            tr.appendChild(tdActions);
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        residentsContainer.appendChild(table);
+
+        // pagination controls
+        paginationEl.style.display = 'flex';
+
+        if (showAll) {
+            pageInfoEl.textContent = `All (${total} residents)`;
+            prevPageBtn.disabled = true;
+            nextPageBtn.disabled = true;
+            allPageBtn.disabled = true;
+        } else {
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            pageInfoEl.textContent = `Page ${currentPage} of ${totalPages} (total ${total} residents)`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            allPageBtn.disabled = false;
+        }
+    }
+
+    prevPageBtn.addEventListener('click', () => {
+        showAll = false;
+        currentPage--;
+        renderResidentsPage();
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        showAll = false;
+        currentPage++;
+        renderResidentsPage();
+    });
+
+    allPageBtn.addEventListener('click', () => {
+        showAll = true;
+        renderResidentsPage();
+    });
 
     loadResidents();
 </script>

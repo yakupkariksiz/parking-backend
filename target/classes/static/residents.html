@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Residents & Plates</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 520px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-top: 0;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: #16a34a;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .message {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .message.success {
+            color: #15803d;
+        }
+
+        .message.error {
+            color: #b91c1c;
+        }
+
+        .nav {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Residents</h1>
+    <div class="subtitle">
+        Map resident <strong>unique code</strong> to one or more <strong>license plates</strong>.
+    </div>
+
+    <form id="resident-form">
+        <label for="uniqueCode">Resident unique code</label>
+        <input
+                type="text"
+                id="uniqueCode"
+                name="uniqueCode"
+                placeholder="RES-001"
+                required
+        >
+
+        <label for="plates">License plates (comma or newline separated)</label>
+        <textarea
+                id="plates"
+                name="plates"
+                placeholder="HHL32H, AA11BB, CC22DD&#10;or one plate per line"
+                required
+        ></textarea>
+
+        <button type="submit" id="submit-btn">Save mapping</button>
+    </form>
+
+    <div id="message" class="message"></div>
+
+    <div class="nav">
+        <a href="/">← Back to scan page</a>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('resident-form');
+    const messageEl = document.getElementById('message');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        messageEl.textContent = '';
+        messageEl.className = 'message';
+
+        const uniqueCodeInput = document.getElementById('uniqueCode');
+        const platesInput = document.getElementById('plates');
+
+        const uniqueCode = uniqueCodeInput.value.trim();
+        const rawPlates = platesInput.value;
+
+        if (!uniqueCode || !rawPlates.trim()) {
+            messageEl.textContent = 'Please fill in both fields.';
+            messageEl.classList.add('error');
+            return;
+        }
+
+        // virgül + newline’e göre split
+        const licensePlates = rawPlates
+            .split(/[\n,]+/)
+            .map(p => p.trim().toUpperCase())
+            .filter(p => p.length > 0);
+
+        if (licensePlates.length === 0) {
+            messageEl.textContent = 'Please enter at least one valid plate.';
+            messageEl.classList.add('error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Saving...';
+
+        try {
+            const response = await fetch(`/residents/${encodeURIComponent(uniqueCode)}/plates`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ licensePlates })
+            });
+
+            if (response.ok) {
+                messageEl.textContent = 'Resident mapping saved ✅';
+                messageEl.classList.add('success');
+                platesInput.value = '';
+            } else {
+                messageEl.textContent = 'Error: ' + response.status;
+                messageEl.classList.add('error');
+            }
+        } catch (err) {
+            messageEl.textContent = 'Network error: ' + err.message;
+            messageEl.classList.add('error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Save mapping';
+        }
+    });
+</script>
+</body>
+</html>

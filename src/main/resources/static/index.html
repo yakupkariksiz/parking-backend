@@ -5,6 +5,10 @@
     <title>Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+
     <style>
         body {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -111,11 +115,10 @@
                 id="licensePlate"
                 name="licensePlate"
                 placeholder="HHL32H"
-                list="knownPlates"
+                class="awesomplete"
                 required
                 oninput="this.value = this.value.toUpperCase()"
         />
-        <datalist id="knownPlates"></datalist>
         <div id="plate-status" style="font-size:0.8rem; margin-top:-10px; margin-bottom:10px; color:#4b5563;"></div>
 
 
@@ -145,13 +148,12 @@
     const submitBtn = document.getElementById('submit-btn');
 
     const plateStatusEl = document.getElementById('plate-status');
-    const knownPlatesDatalist = document.getElementById('knownPlates');
-
     const sessionInput = document.getElementById('sessionName');
     const licensePlateInput = document.getElementById('licensePlate');
     const locationInput = document.getElementById('location');
 
-    let knownPlates = new Set();
+    let knownPlatesSet = new Set();
+    let awesomplete = null;
 
     async function loadKnownPlates() {
         try {
@@ -161,15 +163,24 @@
                 return;
             }
             const data = await res.json();
-            knownPlates = new Set(data.map(p => p.toUpperCase()));
+            const upperList = data.map(p => p.toUpperCase());
+            knownPlatesSet = new Set(upperList);
 
-            // datalist'i doldur
-            knownPlatesDatalist.innerHTML = '';
-            data.forEach(plate => {
-                const opt = document.createElement('option');
-                opt.value = plate;
-                knownPlatesDatalist.appendChild(opt);
-            });
+            // Awesomplete listesi
+            if (window.Awesomplete) {
+                if (!awesomplete) {
+                    awesomplete = new Awesomplete(licensePlateInput, {
+                        list: upperList,
+                        minChars: 1,
+                        maxItems: 10,
+                        autoFirst: true
+                    });
+                } else {
+                    awesomplete.list = upperList;
+                }
+            } else {
+                console.warn('Awesomplete not available yet');
+            }
         } catch (err) {
             console.warn('Error loading known plates', err);
         }
@@ -183,7 +194,7 @@
         }
 
         const upper = plate.toUpperCase();
-        if (knownPlates.has(upper)) {
+        if (knownPlatesSet.has(upper)) {
             plateStatusEl.textContent = '✅ Known resident license plate';
             plateStatusEl.style.color = '#15803d';
         } else {
@@ -192,14 +203,28 @@
         }
     }
 
-    // Sayfa açıldığında plakaları yükle
-    loadKnownPlates();
+    // Tüm sayfa + Awesomplete yüklendikten sonra plakaları çek
+    window.addEventListener('load', loadKnownPlates);
 
-    // Plaka alanına yazdıkça status güncelle
+    // Input yazıldıkça status güncelle
     licensePlateInput.addEventListener('input', () => {
         const plate = licensePlateInput.value.trim();
         updatePlateStatus(plate);
     });
+
+    // Awesomplete'ten seçim yapılınca da status'u güncelle
+    licensePlateInput.addEventListener('awesomplete-selectcomplete', (e) => {
+        // e.text.value varsa onu kullan, yoksa input'tan al
+        const selected = e.text && e.text.value ? e.text.value : licensePlateInput.value.trim();
+        updatePlateStatus(selected);
+    });
+
+    // Bazı tarayıcılarda sadece change tetiklenebiliyor, onu da yakalayalım
+    licensePlateInput.addEventListener('change', () => {
+        const plate = licensePlateInput.value.trim();
+        updatePlateStatus(plate);
+    });
+
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -241,7 +266,7 @@
                 messageEl.classList.add('success');
                 licensePlateInput.value = '';
                 locationInput.value = '';
-                updatePlateStatus(''); // status'u resetle
+                updatePlateStatus('');
             } else {
                 messageEl.textContent = 'Error: ' + response.status;
                 messageEl.classList.add('error');
@@ -255,6 +280,9 @@
         }
     });
 </script>
+
+
+
 
 </body>
 </html>

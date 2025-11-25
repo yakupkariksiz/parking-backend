@@ -15,14 +15,18 @@ public class ScanEntryService {
     private final ScanEntryRepository scanEntryRepository;
     private final VehicleRepository vehicleRepository;
     private final ScanSessionRepository scanSessionRepository;
+    private final OutsiderPlateService outsiderPlateService;
 
     public ScanEntryService(ScanEntryRepository scanEntryRepository,
                             VehicleRepository vehicleRepository,
-                            ScanSessionRepository scanSessionRepository) {
+                            ScanSessionRepository scanSessionRepository,
+                            OutsiderPlateService outsiderPlateService) {
         this.scanEntryRepository = scanEntryRepository;
         this.vehicleRepository = vehicleRepository;
         this.scanSessionRepository = scanSessionRepository;
+        this.outsiderPlateService = outsiderPlateService;
     }
+
 
     @Transactional
     public void createScanEntry(ScanEntryRequest request) {
@@ -47,6 +51,10 @@ public class ScanEntryService {
                 .isPresent();
 
         entry.setResident(isResident);
+
+        if (!isResident) {
+            outsiderPlateService.registerOutsider(normalizedPlate);
+        }
 
         scanEntryRepository.save(entry);
     }

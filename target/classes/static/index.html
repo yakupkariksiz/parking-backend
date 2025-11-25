@@ -111,9 +111,13 @@
                 id="licensePlate"
                 name="licensePlate"
                 placeholder="HHL32H"
+                list="knownPlates"
                 required
                 oninput="this.value = this.value.toUpperCase()"
-        >
+        />
+        <datalist id="knownPlates"></datalist>
+        <div id="plate-status" style="font-size:0.8rem; margin-top:-10px; margin-bottom:10px; color:#4b5563;"></div>
+
 
         <label for="location">Location</label>
         <input
@@ -140,18 +144,73 @@
     const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
 
+    const plateStatusEl = document.getElementById('plate-status');
+    const knownPlatesDatalist = document.getElementById('knownPlates');
+
+    const sessionInput = document.getElementById('sessionName');
+    const licensePlateInput = document.getElementById('licensePlate');
+    const locationInput = document.getElementById('location');
+
+    let knownPlates = new Set();
+
+    async function loadKnownPlates() {
+        try {
+            const res = await fetch('/plates/known');
+            if (!res.ok) {
+                console.warn('Failed to load known plates', res.status);
+                return;
+            }
+            const data = await res.json();
+            knownPlates = new Set(data.map(p => p.toUpperCase()));
+
+            // datalist'i doldur
+            knownPlatesDatalist.innerHTML = '';
+            data.forEach(plate => {
+                const opt = document.createElement('option');
+                opt.value = plate;
+                knownPlatesDatalist.appendChild(opt);
+            });
+        } catch (err) {
+            console.warn('Error loading known plates', err);
+        }
+    }
+
+    function updatePlateStatus(plate) {
+        if (!plate) {
+            plateStatusEl.textContent = '';
+            plateStatusEl.style.color = '#4b5563';
+            return;
+        }
+
+        const upper = plate.toUpperCase();
+        if (knownPlates.has(upper)) {
+            plateStatusEl.textContent = '✅ Known resident license plate';
+            plateStatusEl.style.color = '#15803d';
+        } else {
+            plateStatusEl.textContent = '🚗 Not registered (will be treated as outsider)';
+            plateStatusEl.style.color = '#b45309';
+        }
+    }
+
+    // Sayfa açıldığında plakaları yükle
+    loadKnownPlates();
+
+    // Plaka alanına yazdıkça status güncelle
+    licensePlateInput.addEventListener('input', () => {
+        const plate = licensePlateInput.value.trim();
+        updatePlateStatus(plate);
+    });
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         messageEl.textContent = '';
         messageEl.className = 'message';
 
-        const sessionInput = document.getElementById('sessionName');
-        const licensePlateInput = document.getElementById('licensePlate');
-        const locationInput = document.getElementById('location');
-
         const sessionName = sessionInput.value.trim();
         const licensePlate = licensePlateInput.value.trim().toUpperCase();
         const location = locationInput.value.trim();
+
+        updatePlateStatus(licensePlate);
 
         if (!licensePlate || !location) {
             messageEl.textContent = 'Please fill in license plate and location.';
@@ -182,7 +241,7 @@
                 messageEl.classList.add('success');
                 licensePlateInput.value = '';
                 locationInput.value = '';
-                // sessionName'i aynı tur boyunca korumak için temizlemiyoruz
+                updatePlateStatus(''); // status'u resetle
             } else {
                 messageEl.textContent = 'Error: ' + response.status;
                 messageEl.classList.add('error');
@@ -196,5 +255,6 @@
         }
     });
 </script>
+
 </body>
 </html>

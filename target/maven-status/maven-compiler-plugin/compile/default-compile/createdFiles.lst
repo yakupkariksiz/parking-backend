@@ -6,6 +6,7 @@ com/example/parking/service/StatsService.class
 com/example/parking/ParkingBackendApplication.class
 com/example/parking/service/ResidentService.class
 com/example/parking/controller/StatsController.class
+com/example/parking/repository/OutsiderPlateRepository.class
 com/example/parking/repository/VehicleRepository.class
 com/example/parking/service/ScanEntryService.class
 com/example/parking/controller/ScanEntryController.class
@@ -14,8 +15,11 @@ com/example/parking/dto/ScanEntryRequest.class
 com/example/parking/repository/ResidentRepository.class
 com/example/parking/dto/ResidentPlatesRequest.class
 com/example/parking/model/Resident.class
+com/example/parking/controller/PlateController.class
 com/example/parking/dto/SessionStatsResponse.class
 com/example/parking/repository/ScanSessionRepository.class
+com/example/parking/service/OutsiderPlateService.class
 com/example/parking/model/Vehicle.class
 com/example/parking/dto/ScanSessionSummary.class
 com/example/parking/controller/ScanSessionController.class
+com/example/parking/model/OutsiderPlate.class

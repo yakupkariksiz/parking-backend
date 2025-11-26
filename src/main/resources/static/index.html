@@ -94,6 +94,21 @@
         .nav a:hover {
             text-decoration: underline;
         }
+
+        .session-chip {
+            border-radius: 999px;
+            border: none;
+            padding: 4px 10px;
+            background: #e5e7eb;
+            color: #111827;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .session-chip:hover {
+            background: #dbeafe;
+        }
+
     </style>
 </head>
 <body>
@@ -107,7 +122,16 @@
                 id="sessionName"
                 name="sessionName"
                 placeholder="MORNING-2025-11-25-01"
-        >
+        />
+
+        <div id="session-suggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:-8px; margin-bottom:12px; font-size:0.8rem;">
+            <span style="align-self:center; color:#6b7280;">Quick set:</span>
+            <button type="button" class="session-chip" data-period="MORNING">Morning</button>
+            <button type="button" class="session-chip" data-period="NOON">Noon</button>
+            <button type="button" class="session-chip" data-period="EVENING">Evening</button>
+            <button type="button" class="session-chip" id="session-today-auto">Auto (now)</button>
+        </div>
+
 
         <label for="licensePlate">License plate</label>
         <input
@@ -154,6 +178,22 @@
 
     let knownPlatesSet = new Set();
     let awesomplete = null;
+
+    function getCurrentPeriod() {
+        const hour = new Date().getHours();
+        if (hour < 11) return 'MORNING';
+        if (hour < 16) return 'NOON';
+        return 'EVENING';
+    }
+
+    function buildSessionName(period) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${period}-${year}-${month}-${day}`;
+    }
+
 
     async function loadKnownPlates() {
         try {
@@ -205,6 +245,33 @@
 
     // Tüm sayfa + Awesomplete yüklendikten sonra plakaları çek
     window.addEventListener('load', loadKnownPlates);
+
+    // Sayfa açıldığında sessionName boşsa, current period + tarih ile doldur
+    window.addEventListener('load', () => {
+        if (!sessionInput.value.trim()) {
+            const period = getCurrentPeriod();
+            sessionInput.value = buildSessionName(period);
+        }
+
+        // Quick set butonları
+        const chips = document.querySelectorAll('.session-chip[data-period]');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const period = chip.dataset.period;
+                sessionInput.value = buildSessionName(period);
+            });
+        });
+
+        // "Auto (now)" butonu – şu anki saate göre MORNING/NOON/EVENING
+        const autoBtn = document.getElementById('session-today-auto');
+        if (autoBtn) {
+            autoBtn.addEventListener('click', () => {
+                const period = getCurrentPeriod();
+                sessionInput.value = buildSessionName(period);
+            });
+        }
+    });
+
 
     // Input yazıldıkça status güncelle
     licensePlateInput.addEventListener('input', () => {

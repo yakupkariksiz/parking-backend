@@ -25,6 +25,13 @@ public class UserInitializer {
                     true
             );
 
+            AppUser yakup = new AppUser(
+                    "yakup",
+                    passwordEncoder.encode("karixiz123"), // ŞİFREYİ DEĞİŞTİR
+                    "ROLE_ADMIN",
+                    true
+            );
+
             AppUser user = new AppUser(
                     "scanner",
                     passwordEncoder.encode("scanner123"), // ŞİFREYİ DEĞİŞTİR
@@ -33,6 +40,7 @@ public class UserInitializer {
             );
 
             userRepository.save(admin);
+            userRepository.save(yakup);
             userRepository.save(user);
         };
     }

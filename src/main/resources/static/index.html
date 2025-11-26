@@ -18,13 +18,24 @@
         }
 
         .container {
-            max-width: 480px;
+            max-width: 640px; /* 480 yerine 640 */
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.06);
         }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;          /* 10 → 12 */
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 1.05rem;          /* biraz daha büyük */
+            box-sizing: border-box;
+            margin-bottom: 16px;
+        }
+
 
         h1 {
             font-size: 1.6rem;
@@ -95,6 +106,20 @@
             text-decoration: underline;
         }
 
+        .session-suggestions {
+            display: none;                 /* başlangıçta gizli */
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+            align-items: center;
+        }
+
+        .session-suggestions.visible {
+            display: flex;                 /* visible olduğunda flex */
+        }
+
         .session-chip {
             border-radius: 999px;
             border: none;
@@ -124,7 +149,7 @@
                 placeholder="MORNING-2025-11-25-01"
         />
 
-        <div id="session-suggestions" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:-8px; margin-bottom:12px; font-size:0.8rem;">
+        <div id="session-suggestions" class="session-suggestions">
             <span style="align-self:center; color:#6b7280;">Quick set:</span>
             <button type="button" class="session-chip" data-period="MORNING">Morning</button>
             <button type="button" class="session-chip" data-period="NOON">Noon</button>
@@ -151,7 +176,8 @@
                 type="text"
                 id="location"
                 name="location"
-                placeholder="North or South - Spot 01"
+                placeholder="NORTH-01 or SOUTH-05"
+                class="awesomplete"
                 required
         >
 
@@ -173,11 +199,45 @@
 
     const plateStatusEl = document.getElementById('plate-status');
     const sessionInput = document.getElementById('sessionName');
+    const sessionSuggestions = document.getElementById('session-suggestions');
+
     const licensePlateInput = document.getElementById('licensePlate');
     const locationInput = document.getElementById('location');
 
     let knownPlatesSet = new Set();
     let awesomplete = null;
+
+    let knownLocations = [];
+    let locationAwesomplete = null;
+
+    async function loadKnownLocations() {
+        try {
+            const res = await fetch('/locations/known');
+            if (!res.ok) {
+                console.warn('Failed to load known locations', res.status);
+                return;
+            }
+            const data = await res.json();
+            // Örn: ["NORTH-01", "NORTH-02", ...]
+            knownLocations = data;
+
+            if (window.Awesomplete) {
+                if (!locationAwesomplete) {
+                    locationAwesomplete = new Awesomplete(locationInput, {
+                        list: knownLocations,
+                        minChars: 0,
+                        maxItems: 20,
+                        autoFirst: true
+                    });
+                } else {
+                    locationAwesomplete.list = knownLocations;
+                }
+            }
+        } catch (err) {
+            console.warn('Error loading known locations', err);
+        }
+    }
+
 
     function getCurrentPeriod() {
         const hour = new Date().getHours();
@@ -245,6 +305,9 @@
 
     // Tüm sayfa + Awesomplete yüklendikten sonra plakaları çek
     window.addEventListener('load', loadKnownPlates);
+    window.addEventListener('load', loadKnownLocations);
+
+
 
     // Sayfa açıldığında sessionName boşsa, current period + tarih ile doldur
     window.addEventListener('load', () => {
@@ -270,6 +333,20 @@
                 sessionInput.value = buildSessionName(period);
             });
         }
+
+        // input'a tıklayınca quick set satırını göster
+        sessionInput.addEventListener('focus', () => {
+            sessionSuggestions.classList.add('visible');
+        });
+
+        // focus kaybolunca biraz gecikmeli gizle (butona tıklamaya izin vermek için)
+        sessionInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                sessionSuggestions.classList.remove('visible');
+            }, 150);
+        });
+
+
     });
 
 
@@ -292,6 +369,12 @@
         updatePlateStatus(plate);
     });
 
+    locationInput.addEventListener('focus', () => {
+        if (locationAwesomplete && knownLocations.length > 0) {
+            // mevcut değeri tetiklemek için
+            Awesomplete.$.fire(locationInput, "input");
+        }
+    });
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();

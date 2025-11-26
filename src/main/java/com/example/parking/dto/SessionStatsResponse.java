@@ -9,3 +9,5 @@ public record SessionStatsResponse(
         double residentPercentage,
         double nonResidentPercentage
 ) {}
+
+

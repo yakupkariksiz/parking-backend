@@ -1,5 +1,6 @@
 package com.example.parking.service;
 
+import com.example.parking.dto.ScanEntrySummary;
 import com.example.parking.dto.SessionStatsResponse;
 import com.example.parking.model.ScanEntry;
 import com.example.parking.model.ScanSession;
@@ -7,6 +8,7 @@ import com.example.parking.repository.ScanEntryRepository;
 import com.example.parking.repository.ScanSessionRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -14,6 +16,7 @@ public class StatsService {
 
     private final ScanEntryRepository scanEntryRepository;
     private final ScanSessionRepository scanSessionRepository;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public StatsService(ScanEntryRepository scanEntryRepository,
                         ScanSessionRepository scanSessionRepository) {
@@ -29,8 +32,16 @@ public class StatsService {
 
         long total = entries.size();
         if (total == 0) {
-            return new SessionStatsResponse(session.getId(), session.getName(),
-                    0, 0, 0, 0.0, 0.0);
+            return new SessionStatsResponse(
+                    session.getId(),
+                    session.getName(),
+                    0,
+                    0,
+                    0,
+                    0.0,
+                    0.0,
+                    List.of()
+            );
         }
 
         long residentCount = entries.stream()
@@ -42,6 +53,16 @@ public class StatsService {
         double residentPct = round(residentCount * 100.0 / total);
         double nonResidentPct = round(nonResidentCount * 100.0 / total);
 
+        List<ScanEntrySummary> entrySummaries = entries.stream()
+                .map(e -> new ScanEntrySummary(
+                        e.getId(),
+                        e.getLicensePlate(),
+                        Boolean.TRUE.equals(e.getResident()),
+                        e.getLocation(),
+                        e.getCreatedAt() != null ? e.getCreatedAt().format(formatter) : null
+                ))
+                .toList();
+
         return new SessionStatsResponse(
                 session.getId(),
                 session.getName(),
@@ -49,7 +70,8 @@ public class StatsService {
                 residentCount,
                 nonResidentCount,
                 residentPct,
-                nonResidentPct
+                nonResidentPct,
+                entrySummaries
         );
     }
 

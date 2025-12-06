@@ -1,5 +1,7 @@
 package com.example.parking.dto;
 
+import java.util.List;
+
 public record SessionStatsResponse(
         Long sessionId,
         String sessionName,
@@ -7,7 +9,6 @@ public record SessionStatsResponse(
         long residentCount,
         long nonResidentCount,
         double residentPercentage,
-        double nonResidentPercentage
+        double nonResidentPercentage,
+        List<ScanEntrySummary> entries
 ) {}
-
-

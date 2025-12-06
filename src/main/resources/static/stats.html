@@ -144,6 +144,24 @@
             <div class="stats-label">Non-residents:</div>
             <div><span id="stats-nonresident-count"></span> (<span id="stats-nonresident-pct"></span>%)</div>
         </div>
+
+        <!-- New detailed entries table -->
+        <div style="margin-top:16px; font-size:0.9rem;">
+            <div class="stats-label" style="margin-bottom:4px;">Entries</div>
+            <div style="max-height:260px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px;">
+                <table id="entries-table" style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                    <thead style="background:#f3f4f6; position:sticky; top:0;">
+                    <tr>
+                        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">Time</th>
+                        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">Plate</th>
+                        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">Type</th>
+                        <th style="text-align:left; padding:6px 8px; border-bottom:1px solid #e5e7eb;">Location</th>
+                    </tr>
+                    </thead>
+                    <tbody id="entries-tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div class="nav">
@@ -166,6 +184,7 @@
     const statsResidentPct = document.getElementById('stats-resident-pct');
     const statsNonResidentCount = document.getElementById('stats-nonresident-count');
     const statsNonResidentPct = document.getElementById('stats-nonresident-pct');
+    const entriesTbody = document.getElementById('entries-tbody');
 
     async function loadSessions() {
         try {
@@ -241,6 +260,7 @@
         messageEl.textContent = '';
         messageEl.className = 'message';
         statsCard.style.display = 'none';
+        entriesTbody.innerHTML = '';
 
         const sessionId = sessionSelect.value;
         if (!sessionId) {
@@ -275,6 +295,41 @@
             statsResidentPct.textContent = data.residentPercentage.toFixed(1);
             statsNonResidentCount.textContent = data.nonResidentCount;
             statsNonResidentPct.textContent = data.nonResidentPercentage.toFixed(1);
+
+            // Populate detailed entries table
+            if (Array.isArray(data.entries)) {
+                data.entries.forEach(entry => {
+                    const tr = document.createElement('tr');
+
+                    const timeTd = document.createElement('td');
+                    timeTd.style.padding = '4px 8px';
+                    timeTd.style.borderBottom = '1px solid #e5e7eb';
+                    timeTd.textContent = entry.createdAt || '';
+
+                    const plateTd = document.createElement('td');
+                    plateTd.style.padding = '4px 8px';
+                    plateTd.style.borderBottom = '1px solid #e5e7eb';
+                    plateTd.textContent = entry.licensePlate || '';
+
+                    const typeTd = document.createElement('td');
+                    typeTd.style.padding = '4px 8px';
+                    typeTd.style.borderBottom = '1px solid #e5e7eb';
+                    typeTd.textContent = entry.resident ? 'Resident' : 'Outsider';
+                    typeTd.style.color = entry.resident ? '#15803d' : '#b45309';
+
+                    const locationTd = document.createElement('td');
+                    locationTd.style.padding = '4px 8px';
+                    locationTd.style.borderBottom = '1px solid #e5e7eb';
+                    locationTd.textContent = entry.location || '';
+
+                    tr.appendChild(timeTd);
+                    tr.appendChild(plateTd);
+                    tr.appendChild(typeTd);
+                    tr.appendChild(locationTd);
+
+                    entriesTbody.appendChild(tr);
+                });
+            }
 
             statsCard.style.display = 'block';
         } catch (err) {

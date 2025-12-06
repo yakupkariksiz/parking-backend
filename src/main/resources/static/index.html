@@ -281,6 +281,12 @@
             </div>
         </div>
 
+        <!-- No parking checkbox -->
+        <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem; margin-bottom:12px;">
+            <input type="checkbox" id="no-parking-checkbox" style="width:auto;">
+            <span>This spot is a <strong>NO PARKING</strong> area</span>
+        </label>
+
         <!-- Location field removed; location will be the selected side + index (e.g. NORTH-01) -->
 
         <button type="submit" id="submit-btn">Submit</button>
@@ -310,6 +316,7 @@
     const sessionSuggestions = document.getElementById('session-suggestions');
 
     const licensePlateInput = document.getElementById('licensePlate');
+    const noParkingCheckbox = document.getElementById('no-parking-checkbox');
 
     // Slot / automatic counter elements
     const slotRow = document.getElementById('slot-row');
@@ -595,6 +602,7 @@
 
         const sessionName = sessionInput.value.trim();
         const licensePlate = licensePlateInput.value.trim().toUpperCase();
+        const noParking = !!noParkingCheckbox.checked;
 
         updatePlateStatus(licensePlate);
 
@@ -605,7 +613,7 @@
         }
 
         const locationValue = getCurrentLocation();
-        if (!locationValue) {
+        if (!locationValue && !noParking) {
             messageEl.textContent = 'Location is not ready. Please select side again.';
             messageEl.classList.add('error');
             return;
@@ -618,7 +626,8 @@
             const body = {
                 licensePlate,
                 location: locationValue,
-                sessionName: sessionName || null
+                sessionName: sessionName || null,
+                noParking
             };
 
             const response = await fetch('/scan-entries', {
@@ -634,6 +643,7 @@
                 messageEl.classList.add('success');
                 licensePlateInput.value = '';
                 updatePlateStatus('');
+                noParkingCheckbox.checked = false;
 
                 // Persist the index that was just used for this scan
                 if (selectedSide) {
@@ -641,7 +651,9 @@
                 }
 
                 // Automatically advance to next spot after a successful scan
-                goNextSlot();
+                if (!noParking) {
+                    goNextSlot();
+                }
             } else {
                 messageEl.textContent = 'Error: ' + response.status;
                 messageEl.classList.add('error');

@@ -38,6 +38,9 @@ public class ScanEntryService {
                 .toUpperCase();
 
         String location = request.location().trim();
+        if (request.noParking() != null && request.noParking()) {
+            location = "NO_PARKING";
+        }
 
         ScanSession session = null;
         if (request.sessionName() != null && !request.sessionName().isBlank()) {

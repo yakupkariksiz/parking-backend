@@ -18,7 +18,7 @@
         }
 
         .container {
-            max-width: 640px; /* 480 yerine 640 */
+            max-width: 640px;
             margin: 40px auto;
             background: #ffffff;
             padding: 24px;
@@ -28,14 +28,13 @@
 
         input[type="text"] {
             width: 100%;
-            padding: 12px 14px;          /* 10 → 12 */
+            padding: 12px 14px;
             border-radius: 8px;
             border: 1px solid #ccc;
-            font-size: 1.05rem;          /* biraz daha büyük */
+            font-size: 1.05rem;
             box-sizing: border-box;
             margin-bottom: 16px;
         }
-
 
         h1 {
             font-size: 1.6rem;
@@ -48,16 +47,6 @@
             display: block;
             margin-bottom: 6px;
             font-weight: 600;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            box-sizing: border-box;
-            margin-bottom: 16px;
         }
 
         button {
@@ -107,7 +96,7 @@
         }
 
         .session-suggestions {
-            display: none;                 /* başlangıçta gizli */
+            display: none;
             gap: 6px;
             flex-wrap: wrap;
             margin-top: -8px;
@@ -117,7 +106,7 @@
         }
 
         .session-suggestions.visible {
-            display: flex;                 /* visible olduğunda flex */
+            display: flex;
         }
 
         .session-chip {
@@ -134,9 +123,115 @@
             background: #dbeafe;
         }
 
+        /* Simple full-screen overlay for side selection */
+        .side-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .side-overlay.hidden {
+            display: none;
+        }
+
+        .side-dialog {
+            background: #ffffff;
+            padding: 20px 24px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .side-dialog h2 {
+            margin-top: 0;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+        }
+
+        .side-dialog select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+
+        .side-dialog button {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: none;
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .side-dialog small {
+            display: block;
+            margin-top: 6px;
+            color: #6b7280;
+            font-size: 0.8rem;
+        }
+
+        .slot-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+
+        .slot-label {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .slot-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .slot-btn {
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: none;
+            background: #e5e7eb;
+            color: #111827;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .slot-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
     </style>
 </head>
 <body>
+
+<!-- Side selection overlay shown when page loads -->
+<div id="side-overlay" class="side-overlay">
+    <div class="side-dialog">
+        <h2>Select parking side</h2>
+        <select id="side-select">
+            <option value="" disabled selected>Select side...</option>
+            <option value="NORTH">North</option>
+            <option value="SOUTH">South</option>
+        </select>
+        <button type="button" id="side-confirm-btn">Continue</button>
+        <small>You can refresh the page to choose a different side.</small>
+    </div>
+</div>
+
 <div class="container">
     <h1>Parking Scanner</h1>
 
@@ -170,16 +265,19 @@
         />
         <div id="plate-status" style="font-size:0.8rem; margin-top:-10px; margin-bottom:10px; color:#4b5563;"></div>
 
+        <!-- Automatic location counter row -->
+        <div id="slot-row" class="slot-row" style="display:none;">
+            <div>
+                <span style="color:#6b7280;">Current spot:</span>
+                <span id="slot-label" class="slot-label">-</span>
+            </div>
+            <div class="slot-controls">
+                <button type="button" id="slot-prev" class="slot-btn">Prev</button>
+                <button type="button" id="slot-next" class="slot-btn">Next</button>
+            </div>
+        </div>
 
-        <label for="location">Location</label>
-        <input
-                type="text"
-                id="location"
-                name="location"
-                placeholder="NORTH-01 or SOUTH-05"
-                class="awesomplete"
-                required
-        >
+        <!-- Location field removed; location will be the selected side + index (e.g. NORTH-01) -->
 
         <button type="submit" id="submit-btn">Submit</button>
     </form>
@@ -208,46 +306,42 @@
     const sessionSuggestions = document.getElementById('session-suggestions');
 
     const licensePlateInput = document.getElementById('licensePlate');
-    const locationInput = document.getElementById('location');
 
-    let knownPlatesSet = new Set();
-    let awesomplete = null;
+    // Slot / automatic counter elements
+    const slotRow = document.getElementById('slot-row');
+    const slotLabelEl = document.getElementById('slot-label');
+    const slotPrevBtn = document.getElementById('slot-prev');
+    const slotNextBtn = document.getElementById('slot-next');
 
-    // Track which plates belong to residents vs outsiders
-    let residentPlatesSet = new Set();
-    let outsiderPlatesSet = new Set();
+    // Side selection elements
+    const sideOverlay = document.getElementById('side-overlay');
+    const sideSelect = document.getElementById('side-select');
+    const sideConfirmBtn = document.getElementById('side-confirm-btn');
 
-    let knownLocations = [];
-    let locationAwesomplete = null;
+    // Currently selected side ("NORTH" or "SOUTH")
+    let selectedSide = null;
 
-    async function loadKnownLocations() {
-        try {
-            const res = await fetch('/locations/known');
-            if (!res.ok) {
-                console.warn('Failed to load known locations', res.status);
-                return;
-            }
-            const data = await res.json();
-            // Örn: ["NORTH-01", "NORTH-02", ...]
-            knownLocations = data;
+    // Automatic counter for spots on the chosen side
+    let currentIndex = 1; // 1-based
 
-            if (window.Awesomplete) {
-                if (!locationAwesomplete) {
-                    locationAwesomplete = new Awesomplete(locationInput, {
-                        list: knownLocations,
-                        minChars: 0,
-                        maxItems: 20,
-                        autoFirst: true
-                    });
-                } else {
-                    locationAwesomplete.list = knownLocations;
-                }
-            }
-        } catch (err) {
-            console.warn('Error loading known locations', err);
-        }
+    // --- Persistence helpers for current spot per side ---
+    const STORAGE_KEY_NORTH = 'scanner_current_index_north';
+    const STORAGE_KEY_SOUTH = 'scanner_current_index_south';
+
+    function loadStoredIndexForSide(side) {
+        if (!window.localStorage) return null;
+        const key = side === 'NORTH' ? STORAGE_KEY_NORTH : STORAGE_KEY_SOUTH;
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = parseInt(raw, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }
 
+    function storeIndexForSide(side, index) {
+        if (!window.localStorage) return;
+        const key = side === 'NORTH' ? STORAGE_KEY_NORTH : STORAGE_KEY_SOUTH;
+        localStorage.setItem(key, String(index));
+    }
 
     function getCurrentPeriod() {
         const hour = new Date().getHours();
@@ -262,59 +356,6 @@
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
         return `${period}-${year}-${month}-${day}`;
-    }
-
-
-    async function loadKnownPlates() {
-        try {
-            const res = await fetch('/plates/known');
-            if (!res.ok) {
-                console.warn('Failed to load known plates', res.status);
-                return;
-            }
-            const data = await res.json();
-
-            // data can be either ["ABC123", ...] (backward compatible)
-            // or an object { residents: [...], outsiders: [...] }
-            let allPlatesUpper = [];
-            residentPlatesSet = new Set();
-            outsiderPlatesSet = new Set();
-
-            if (Array.isArray(data)) {
-                // Older/simple format: we don't know which are outsiders, so treat all as generic known plates
-                allPlatesUpper = data.map(p => p.toUpperCase());
-            } else if (data && (Array.isArray(data.residents) || Array.isArray(data.outsiders))) {
-                const residentUpper = (data.residents || []).map(p => p.toUpperCase());
-                const outsiderUpper = (data.outsiders || []).map(p => p.toUpperCase());
-
-                residentUpper.forEach(p => residentPlatesSet.add(p));
-                outsiderUpper.forEach(p => outsiderPlatesSet.add(p));
-
-                allPlatesUpper = Array.from(new Set([...residentUpper, ...outsiderUpper]));
-            } else {
-                console.warn('Unexpected known plates payload', data);
-                return;
-            }
-
-            knownPlatesSet = new Set(allPlatesUpper);
-
-            if (window.Awesomplete) {
-                if (!awesomplete) {
-                    awesomplete = new Awesomplete(licensePlateInput, {
-                        list: allPlatesUpper,
-                        minChars: 1,
-                        maxItems: 10,
-                        autoFirst: true
-                    });
-                } else {
-                    awesomplete.list = allPlatesUpper;
-                }
-            } else {
-                console.warn('Awesomplete not available yet');
-            }
-        } catch (err) {
-            console.warn('Error loading known plates', err);
-        }
     }
 
     function updatePlateStatus(plate) {
@@ -337,11 +378,88 @@
         }
     }
 
+    // Slot label and navigation
+    function formatSlotLabel(side, index) {
+        const num = String(index).padStart(2, '0');
+        return `${side}-${num}`;
+    }
+
+    function updateSlotUI() {
+        if (!selectedSide) {
+            slotRow.style.display = 'none';
+            return;
+        }
+        slotRow.style.display = 'flex';
+        slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex);
+
+        // Prev is disabled on the first spot
+        slotPrevBtn.disabled = currentIndex <= 1;
+        // Next is never disabled (you can keep going forward as needed)
+        slotNextBtn.disabled = false;
+    }
+
+    function getCurrentLocation() {
+        if (!selectedSide) return null;
+        return formatSlotLabel(selectedSide, currentIndex);
+    }
+
+    function goPrevSlot() {
+        if (currentIndex > 1) {
+            currentIndex--;
+            updateSlotUI();
+        }
+    }
+
+    function goNextSlot() {
+        currentIndex++;
+        updateSlotUI();
+        // Persist new index for this side
+        if (selectedSide) {
+            storeIndexForSide(selectedSide, currentIndex);
+        }
+    }
+
+    slotPrevBtn.addEventListener('click', () => {
+        goPrevSlot();
+        if (selectedSide) {
+            storeIndexForSide(selectedSide, currentIndex);
+        }
+    });
+    slotNextBtn.addEventListener('click', goNextSlot);
+
+    // Wire side selection overlay
+    sideConfirmBtn.addEventListener('click', () => {
+        const value = sideSelect.value;
+        if (!value) {
+            alert('Please select a side (North or South).');
+            return;
+        }
+        selectedSide = value; // "NORTH" or "SOUTH"
+
+        // Try to restore last used index for this side, then continue from last+1
+        const stored = loadStoredIndexForSide(selectedSide);
+        if (stored && stored > 0) {
+            currentIndex = stored + 1;
+        } else {
+            currentIndex = 1;
+        }
+
+        updateSlotUI();
+        sideOverlay.classList.add('hidden');
+    });
+
+    // Ensure user selects a side before scanning
+    function ensureSideSelected() {
+        if (!selectedSide) {
+            alert('Please select parking side (North or South) first.');
+            sideOverlay.classList.remove('hidden');
+            return false;
+        }
+        return true;
+    }
+
     // Tüm sayfa + Awesomplete yüklendikten sonra plakaları çek
     window.addEventListener('load', loadKnownPlates);
-    window.addEventListener('load', loadKnownLocations);
-
-
 
     // Sayfa açıldığında sessionName boşsa, current period + tarih ile doldur
     window.addEventListener('load', () => {
@@ -350,7 +468,6 @@
             sessionInput.value = buildSessionName(period);
         }
 
-        // Quick set butonları
         const chips = document.querySelectorAll('.session-chip[data-period]');
         chips.forEach(chip => {
             chip.addEventListener('click', () => {
@@ -359,7 +476,6 @@
             });
         });
 
-        // "Auto (now)" butonu – şu anki saate göre MORNING/NOON/EVENING
         const autoBtn = document.getElementById('session-today-auto');
         if (autoBtn) {
             autoBtn.addEventListener('click', () => {
@@ -368,21 +484,16 @@
             });
         }
 
-        // input'a tıklayınca quick set satırını göster
         sessionInput.addEventListener('focus', () => {
             sessionSuggestions.classList.add('visible');
         });
 
-        // focus kaybolunca biraz gecikmeli gizle (butona tıklamaya izin vermek için)
         sessionInput.addEventListener('blur', () => {
             setTimeout(() => {
                 sessionSuggestions.classList.remove('visible');
             }, 150);
         });
-
-
     });
-
 
     // Input yazıldıkça status güncelle
     licensePlateInput.addEventListener('input', () => {
@@ -390,24 +501,14 @@
         updatePlateStatus(plate);
     });
 
-    // Awesomplete'ten seçim yapılınca da status'u güncelle
     licensePlateInput.addEventListener('awesomplete-selectcomplete', (e) => {
-        // e.text.value varsa onu kullan, yoksa input'tan al
         const selected = e.text && e.text.value ? e.text.value : licensePlateInput.value.trim();
         updatePlateStatus(selected);
     });
 
-    // Bazı tarayıcılarda sadece change tetiklenebiliyor, onu da yakalayalım
     licensePlateInput.addEventListener('change', () => {
         const plate = licensePlateInput.value.trim();
         updatePlateStatus(plate);
-    });
-
-    locationInput.addEventListener('focus', () => {
-        if (locationAwesomplete && knownLocations.length > 0) {
-            // mevcut değeri tetiklemek için
-            Awesomplete.$.fire(locationInput, "input");
-        }
     });
 
     form.addEventListener('submit', async (event) => {
@@ -415,14 +516,24 @@
         messageEl.textContent = '';
         messageEl.className = 'message';
 
+        if (!ensureSideSelected()) {
+            return;
+        }
+
         const sessionName = sessionInput.value.trim();
         const licensePlate = licensePlateInput.value.trim().toUpperCase();
-        const location = locationInput.value.trim();
 
         updatePlateStatus(licensePlate);
 
-        if (!licensePlate || !location) {
-            messageEl.textContent = 'Please fill in license plate and location.';
+        if (!licensePlate) {
+            messageEl.textContent = 'Please fill in license plate.';
+            messageEl.classList.add('error');
+            return;
+        }
+
+        const locationValue = getCurrentLocation();
+        if (!locationValue) {
+            messageEl.textContent = 'Location is not ready. Please select side again.';
             messageEl.classList.add('error');
             return;
         }
@@ -433,7 +544,7 @@
         try {
             const body = {
                 licensePlate,
-                location,
+                location: locationValue,
                 sessionName: sessionName || null
             };
 
@@ -449,8 +560,15 @@
                 messageEl.textContent = 'Saved ✅';
                 messageEl.classList.add('success');
                 licensePlateInput.value = '';
-                locationInput.value = '';
                 updatePlateStatus('');
+
+                // Persist the index that was just used for this scan
+                if (selectedSide) {
+                    storeIndexForSide(selectedSide, currentIndex);
+                }
+
+                // Automatically advance to next spot after a successful scan
+                goNextSlot();
             } else {
                 messageEl.textContent = 'Error: ' + response.status;
                 messageEl.classList.add('error');
@@ -464,9 +582,6 @@
         }
     });
 </script>
-
-
-
 
 </body>
 </html>

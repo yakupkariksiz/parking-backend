@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,18 +28,27 @@ public class PlateController {
     }
 
     @GetMapping("/known")
-    public List<String> getKnownPlates() {
-        // Merge resident vehicle plates and outsider plates into a single, distinct, sorted list
-        return Stream.concat(
-                        vehicleRepository.findAll().stream()
-                                .map(v -> v.getLicensePlate()),
-                        outsiderPlateRepository.findAll().stream()
-                                .map(op -> op.getLicensePlate())
-                )
+    public Map<String, List<String>> getKnownPlates() {
+        // Separate resident vehicle plates and outsider plates, then return both lists
+        List<String> residentPlates = vehicleRepository.findAll().stream()
+                .map(v -> v.getLicensePlate())
                 .filter(plate -> plate != null && !plate.isBlank())
                 .map(String::toUpperCase)
                 .distinct()
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
+
+        List<String> outsiderPlates = outsiderPlateRepository.findAll().stream()
+                .map(op -> op.getLicensePlate())
+                .filter(plate -> plate != null && !plate.isBlank())
+                .map(String::toUpperCase)
+                .distinct()
+                .sorted(Comparator.naturalOrder())
+                .collect(Collectors.toList());
+
+        Map<String, List<String>> result = new HashMap<>();
+        result.put("residents", residentPlates);
+        result.put("outsiders", outsiderPlates);
+        return result;
     }
 }

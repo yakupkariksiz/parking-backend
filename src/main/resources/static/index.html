@@ -213,6 +213,10 @@
     let knownPlatesSet = new Set();
     let awesomplete = null;
 
+    // Track which plates belong to residents vs outsiders
+    let residentPlatesSet = new Set();
+    let outsiderPlatesSet = new Set();
+
     let knownLocations = [];
     let locationAwesomplete = null;
 
@@ -269,20 +273,41 @@
                 return;
             }
             const data = await res.json();
-            const upperList = data.map(p => p.toUpperCase());
-            knownPlatesSet = new Set(upperList);
 
-            // Awesomplete listesi
+            // data can be either ["ABC123", ...] (backward compatible)
+            // or an object { residents: [...], outsiders: [...] }
+            let allPlatesUpper = [];
+            residentPlatesSet = new Set();
+            outsiderPlatesSet = new Set();
+
+            if (Array.isArray(data)) {
+                // Older/simple format: we don't know which are outsiders, so treat all as generic known plates
+                allPlatesUpper = data.map(p => p.toUpperCase());
+            } else if (data && (Array.isArray(data.residents) || Array.isArray(data.outsiders))) {
+                const residentUpper = (data.residents || []).map(p => p.toUpperCase());
+                const outsiderUpper = (data.outsiders || []).map(p => p.toUpperCase());
+
+                residentUpper.forEach(p => residentPlatesSet.add(p));
+                outsiderUpper.forEach(p => outsiderPlatesSet.add(p));
+
+                allPlatesUpper = Array.from(new Set([...residentUpper, ...outsiderUpper]));
+            } else {
+                console.warn('Unexpected known plates payload', data);
+                return;
+            }
+
+            knownPlatesSet = new Set(allPlatesUpper);
+
             if (window.Awesomplete) {
                 if (!awesomplete) {
                     awesomplete = new Awesomplete(licensePlateInput, {
-                        list: upperList,
+                        list: allPlatesUpper,
                         minChars: 1,
                         maxItems: 10,
                         autoFirst: true
                     });
                 } else {
-                    awesomplete.list = upperList;
+                    awesomplete.list = allPlatesUpper;
                 }
             } else {
                 console.warn('Awesomplete not available yet');
@@ -300,9 +325,12 @@
         }
 
         const upper = plate.toUpperCase();
-        if (knownPlatesSet.has(upper)) {
+        if (residentPlatesSet.has(upper)) {
             plateStatusEl.textContent = '✅ Known resident license plate';
             plateStatusEl.style.color = '#15803d';
+        } else if (outsiderPlatesSet.has(upper)) {
+            plateStatusEl.textContent = '🚗 Previously seen outsider plate';
+            plateStatusEl.style.color = '#1d4ed8';
         } else {
             plateStatusEl.textContent = '🚗 Not registered (will be treated as outsider)';
             plateStatusEl.style.color = '#b45309';

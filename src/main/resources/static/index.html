@@ -252,6 +252,10 @@
             <button type="button" class="session-chip" id="session-today-auto">Auto (now)</button>
         </div>
 
+        <!-- New button to reopen side selection popup -->
+        <button type="button" id="change-side-btn" style="margin-bottom:12px;background:#e5e7eb;color:#111827;">
+            Change parking side
+        </button>
 
         <label for="licensePlate">License plate</label>
         <input
@@ -317,6 +321,7 @@
     const sideOverlay = document.getElementById('side-overlay');
     const sideSelect = document.getElementById('side-select');
     const sideConfirmBtn = document.getElementById('side-confirm-btn');
+    const changeSideBtn = document.getElementById('change-side-btn');
 
     // Currently selected side ("NORTH" or "SOUTH")
     let selectedSide = null;
@@ -327,6 +332,66 @@
     // --- Persistence helpers for current spot per side ---
     const STORAGE_KEY_NORTH = 'scanner_current_index_north';
     const STORAGE_KEY_SOUTH = 'scanner_current_index_south';
+
+    // Known plates + Awesomplete for license plate
+    let knownPlatesSet = new Set();
+    let awesomplete = null;
+
+    // Track which plates belong to residents vs outsiders
+    let residentPlatesSet = new Set();
+    let outsiderPlatesSet = new Set();
+
+    async function loadKnownPlates() {
+        try {
+            const res = await fetch('/plates/known');
+            if (!res.ok) {
+                console.warn('Failed to load known plates', res.status);
+                return;
+            }
+            const data = await res.json();
+
+            // data can be either ["ABC123", ...] (backward compatible)
+            // or an object { residents: [...], outsiders: [...] }
+            let allPlatesUpper = [];
+            residentPlatesSet = new Set();
+            outsiderPlatesSet = new Set();
+
+            if (Array.isArray(data)) {
+                // Older/simple format: we don't know which are outsiders, so treat all as generic known plates
+                allPlatesUpper = data.map(p => p.toUpperCase());
+            } else if (data && (Array.isArray(data.residents) || Array.isArray(data.outsiders))) {
+                const residentUpper = (data.residents || []).map(p => p.toUpperCase());
+                const outsiderUpper = (data.outsiders || []).map(p => p.toUpperCase());
+
+                residentUpper.forEach(p => residentPlatesSet.add(p));
+                outsiderUpper.forEach(p => outsiderPlatesSet.add(p));
+
+                allPlatesUpper = Array.from(new Set([...residentUpper, ...outsiderUpper]));
+            } else {
+                console.warn('Unexpected known plates payload', data);
+                return;
+            }
+
+            knownPlatesSet = new Set(allPlatesUpper);
+
+            if (window.Awesomplete) {
+                if (!awesomplete) {
+                    awesomplete = new Awesomplete(licensePlateInput, {
+                        list: allPlatesUpper,
+                        minChars: 1,
+                        maxItems: 10,
+                        autoFirst: true
+                    });
+                } else {
+                    awesomplete.list = allPlatesUpper;
+                }
+            } else {
+                console.warn('Awesomplete not available yet');
+            }
+        } catch (err) {
+            console.warn('Error loading known plates', err);
+        }
+    }
 
     function loadStoredIndexForSide(side) {
         if (!window.localStorage) return null;
@@ -426,6 +491,14 @@
         }
     });
     slotNextBtn.addEventListener('click', goNextSlot);
+
+    changeSideBtn.addEventListener('click', () => {
+        // Show the overlay again so user can switch side; keep previously selected side in dropdown
+        sideOverlay.classList.remove('hidden');
+        if (selectedSide) {
+            sideSelect.value = selectedSide;
+        }
+    });
 
     // Wire side selection overlay
     sideConfirmBtn.addEventListener('click', () => {

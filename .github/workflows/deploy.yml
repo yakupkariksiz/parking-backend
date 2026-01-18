@@ -52,7 +52,7 @@ jobs:
               --server.port=8080 \
               > app.log 2>&1 &
             echo "Waiting for application to start..."
-            sleep 30
+            sleep 1m
             echo "=== Application Log ==="
             tail -100 app.log
             echo "=== Health Check ==="

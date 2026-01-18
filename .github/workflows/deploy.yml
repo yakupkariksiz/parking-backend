@@ -40,6 +40,7 @@ jobs:
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
           envs: DB_PASSWORD
+          command_timeout: 5m
           script: |
             cd /home/ubuntu/parking-backend
             pkill -f 'parking.*jar' || true
@@ -58,4 +59,5 @@ jobs:
             curl -f http://localhost:8080/actuator/health || (echo "Health check failed" && tail -200 app.log && exit 1)
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+
 

@@ -1,0 +1,52 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: ./mvnw clean package -DskipTests
+
+      - name: Copy JAR to Lightsail
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          source: "target/*.jar"
+          target: "/home/ubuntu/parking-backend"
+          strip_components: 1
+
+      - name: Deploy on Lightsail
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/parking-backend
+            pkill -f 'parking.*jar' || true
+            nohup java -jar parking-*.jar \
+              --spring.datasource.url=jdbc:postgresql://localhost:5432/parking_db \
+              --spring.datasource.username=parking_user \
+              --spring.datasource.password=${{ secrets.DB_PASSWORD }} \
+              --server.port=8080 \
+              > app.log 2>&1 &
+            sleep 10
+            curl -f http://localhost:8080/actuator/health || exit 1

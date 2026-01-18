@@ -44,13 +44,13 @@ jobs:
           script: |
             cd /home/ubuntu/parking-backend
             
-            # 1. Stop existing application gracefully
-            echo "Stopping old application..."
-            pkill -f 'parking.*jar' || true
+            # 1. Stop existing application (SAFE METHOD)
+            echo "Stopping old application running on port 8080..."
+            # Kill process on port 8080 (ignoring errors if nothing is running)
+            fuser -k 8080/tcp || true
             sleep 5
             
             # 2. Start new application
-            # Added < /dev/null to ensure SSH doesn't hang waiting for input
             echo "Starting new application..."
             nohup java -jar parking-*.jar \
               --spring.datasource.url=jdbc:postgresql://localhost:5432/parking_db \
@@ -59,9 +59,8 @@ jobs:
               --server.port=8080 \
               > app.log 2>&1 < /dev/null &
             
-            # 3. Smart Health Check Loop (Poller)
+            # 3. Smart Health Check Loop
             echo "Waiting for health check..."
-            # Try connecting every 5 seconds, up to 24 times (2 minutes total)
             for i in {1..24}; do
               if curl -s --fail --max-time 5 http://localhost:8080/actuator/health; then
                 echo "Application started successfully!"
@@ -73,7 +72,6 @@ jobs:
             
             # 4. Failure Handler
             echo "Error: Application failed to start within timeout."
-            echo "=== Last 100 lines of app.log ==="
             tail -n 100 app.log
             exit 1
         env:

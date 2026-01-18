@@ -43,13 +43,19 @@ jobs:
           script: |
             cd /home/ubuntu/parking-backend
             pkill -f 'parking.*jar' || true
+            sleep 2
             nohup java -jar parking-*.jar \
               --spring.datasource.url=jdbc:postgresql://localhost:5432/parking_db \
               --spring.datasource.username=parking_user \
               --spring.datasource.password="$DB_PASSWORD" \
               --server.port=8080 \
               > app.log 2>&1 &
-            sleep 15
-            curl -f http://localhost:8080/actuator/health || exit 1
+            echo "Waiting for application to start..."
+            sleep 30
+            echo "=== Application Log ==="
+            tail -100 app.log
+            echo "=== Health Check ==="
+            curl -f http://localhost:8080/actuator/health || (echo "Health check failed" && tail -200 app.log && exit 1)
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+

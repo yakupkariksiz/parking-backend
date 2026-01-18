@@ -39,14 +39,17 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          envs: DB_PASSWORD
           script: |
             cd /home/ubuntu/parking-backend
             pkill -f 'parking.*jar' || true
             nohup java -jar parking-*.jar \
               --spring.datasource.url=jdbc:postgresql://localhost:5432/parking_db \
               --spring.datasource.username=parking_user \
-              --spring.datasource.password=${{ secrets.DB_PASSWORD }} \
+              --spring.datasource.password="$DB_PASSWORD" \
               --server.port=8080 \
               > app.log 2>&1 &
-            sleep 10
+            sleep 15
             curl -f http://localhost:8080/actuator/health || exit 1
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}

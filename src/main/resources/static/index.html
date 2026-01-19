@@ -188,6 +188,30 @@
             max-width: 360px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             text-align: center;
+            position: relative;
+        }
+
+        .side-dialog .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: #f3f4f6;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #6b7280;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .side-dialog .close-btn:hover {
+            background: #e5e7eb;
+            color: #111827;
         }
 
         .side-dialog h2 {
@@ -388,6 +412,7 @@
 <!-- Side selection overlay shown when page loads -->
 <div id="side-overlay" class="side-overlay">
     <div class="side-dialog">
+        <button type="button" id="side-close-btn" class="close-btn" title="Close">✕</button>
         <h2>Select parking side</h2>
         <select id="side-select">
             <option value="" disabled selected>Select side...</option>
@@ -395,7 +420,7 @@
             <option value="SOUTH">South</option>
         </select>
         <button type="button" id="side-confirm-btn">Continue</button>
-        <small>You can refresh the page to choose a different side.</small>
+        <small>You can close this and select later using "Change parking side" button.</small>
     </div>
 </div>
 
@@ -554,6 +579,7 @@
     const sideOverlay = document.getElementById('side-overlay');
     const sideSelect = document.getElementById('side-select');
     const sideConfirmBtn = document.getElementById('side-confirm-btn');
+    const sideCloseBtn = document.getElementById('side-close-btn');
     const changeSideBtn = document.getElementById('change-side-btn');
 
     // Currently selected side ("NORTH" or "SOUTH")
@@ -731,6 +757,11 @@
         if (selectedSide) {
             sideSelect.value = selectedSide;
         }
+    });
+
+    // Close button on side selection popup
+    sideCloseBtn.addEventListener('click', () => {
+        sideOverlay.classList.add('hidden');
     });
 
     // Wire side selection overlay

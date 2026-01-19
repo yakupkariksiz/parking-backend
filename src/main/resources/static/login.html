@@ -167,7 +167,10 @@
     const params = new URLSearchParams(window.location.search);
     const msgEl = document.getElementById('msg');
 
-    if (params.has('error')) {
+    if (params.get('error') === 'oauth2') {
+        msgEl.textContent = 'Google authentication failed. Please try again or contact admin.';
+        msgEl.classList.add('error');
+    } else if (params.has('error')) {
         msgEl.textContent = 'Invalid username or password.';
         msgEl.classList.add('error');
     } else if (params.has('logout')) {

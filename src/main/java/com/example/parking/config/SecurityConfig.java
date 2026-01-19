@@ -50,7 +50,8 @@ public class SecurityConfig {
 
                         // sadece login olmus herkes (ADMIN + USER):
                         .requestMatchers(
-                                "/",              // index
+                                "/",              // root redirects to dashboard
+                                "/dashboard.html",
                                 "/index.html",
                                 "/scan-entries/**"
                         ).authenticated()
@@ -61,12 +62,12 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login.html")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/dashboard.html", true)
                         .permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login.html")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/dashboard.html", true)
                         .failureUrl("/login.html?error=oauth2")
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)

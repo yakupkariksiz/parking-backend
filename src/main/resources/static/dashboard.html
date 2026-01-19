@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard – Parking Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .user-header .app-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+        }
+
+        .user-info .user-details {
+            text-align: right;
+        }
+
+        .user-info .user-name {
+            font-weight: 500;
+        }
+
+        .user-info .user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .logout-btn {
+            background: #475569;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .logout-btn:hover {
+            background: #64748b;
+        }
+
+        /* Main content */
+        .main-content {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-section h1 {
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .welcome-section p {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        /* Menu grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .menu-card .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .menu-card h2 {
+            font-size: 1.2rem;
+            margin: 0 0 8px 0;
+            color: #1e293b;
+        }
+
+        .menu-card p {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .menu-card.scanner {
+            border-left: 4px solid #2563eb;
+        }
+
+        .menu-card.residents {
+            border-left: 4px solid #16a34a;
+        }
+
+        .menu-card.stats {
+            border-left: 4px solid #9333ea;
+        }
+
+        .menu-card.audit {
+            border-left: 4px solid #ea580c;
+        }
+
+        /* Admin only badge */
+        .admin-badge {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        /* Quick stats section */
+        .quick-stats {
+            margin-top: 40px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .quick-stats h3 {
+            margin: 0 0 16px 0;
+            color: #1e293b;
+            font-size: 1.1rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .stat-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .stat-item .label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Hide admin-only items for non-admins */
+        .admin-only {
+            display: none;
+        }
+
+        .admin-only.visible {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+<!-- User header bar -->
+<div class="user-header">
+    <span class="app-name">🚗 Parking Scanner</span>
+    <div class="user-info">
+        <div class="user-details">
+            <div class="user-name" id="user-name">Loading...</div>
+            <div class="user-role" id="user-role"></div>
+        </div>
+        <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        <form method="post" action="/logout" style="margin:0;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="welcome-section">
+        <h1>Welcome back!</h1>
+        <p>Select an option below to get started.</p>
+    </div>
+
+    <div class="menu-grid">
+        <!-- Scanner - available to all authenticated users -->
+        <a href="/index.html" class="menu-card scanner">
+            <div class="icon">📷</div>
+            <h2>Scan Plates</h2>
+            <p>Scan license plates during parking patrol sessions.</p>
+        </a>
+
+        <!-- Residents - admin only -->
+        <a href="/residents.html" class="menu-card residents admin-only" id="residents-card">
+            <div class="icon">👥</div>
+            <h2>Manage Residents</h2>
+            <p>Add, edit, or remove residents and their license plates.</p>
+            <span class="admin-badge">Admin Only</span>
+        </a>
+
+        <!-- Stats - admin only -->
+        <a href="/stats.html" class="menu-card stats admin-only" id="stats-card">
+            <div class="icon">📊</div>
+            <h2>View Statistics</h2>
+            <p>See scan session stats and resident/outsider breakdowns.</p>
+            <span class="admin-badge">Admin Only</span>
+        </a>
+
+        <!-- Audit Logs - admin only -->
+        <a href="/audit.html" class="menu-card audit admin-only" id="audit-card">
+            <div class="icon">📋</div>
+            <h2>Audit Logs</h2>
+            <p>Review system activity and API request history.</p>
+            <span class="admin-badge">Admin Only</span>
+        </a>
+    </div>
+
+    <!-- Quick stats section -->
+    <div class="quick-stats admin-only" id="quick-stats">
+        <h3>📈 Quick Overview</h3>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="value" id="total-residents">-</div>
+                <div class="label">Residents</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="total-sessions">-</div>
+                <div class="label">Scan Sessions</div>
+            </div>
+            <div class="stat-item">
+                <div class="value" id="total-scans">-</div>
+                <div class="label">Total Scans</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // User info elements
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+    const userAvatarEl = document.getElementById('user-avatar');
+
+    // Admin-only elements
+    const adminOnlyElements = document.querySelectorAll('.admin-only');
+
+    // Fetch and display current user
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me');
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || user.email || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+                    if (user.picture) {
+                        userAvatarEl.src = user.picture;
+                    }
+
+                    // Show admin-only items if user is admin
+                    if (user.role === 'ROLE_ADMIN') {
+                        adminOnlyElements.forEach(el => el.classList.add('visible'));
+                        loadQuickStats();
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
+
+    // Load quick stats for admins
+    async function loadQuickStats() {
+        try {
+            // Load residents count
+            const residentsRes = await fetch('/residents');
+            if (residentsRes.ok) {
+                const residents = await residentsRes.json();
+                document.getElementById('total-residents').textContent = residents.length || 0;
+            }
+
+            // Load sessions count
+            const sessionsRes = await fetch('/scan-sessions');
+            if (sessionsRes.ok) {
+                const sessions = await sessionsRes.json();
+                document.getElementById('total-sessions').textContent = sessions.length || 0;
+
+                // Calculate total scans from sessions
+                let totalScans = 0;
+                sessions.forEach(s => totalScans += (s.scanCount || 0));
+                document.getElementById('total-scans').textContent = totalScans;
+            }
+        } catch (err) {
+            console.warn('Failed to load quick stats', err);
+        }
+    }
+
+    loadCurrentUser();
+</script>
+
+</body>
+</html>
+

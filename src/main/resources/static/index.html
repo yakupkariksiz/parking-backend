@@ -853,9 +853,19 @@
                 video: {
                     facingMode: { ideal: 'environment' },
                     width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    height: { ideal: 720 },
+                    advanced: [{ torch: false }]
                 }
             });
+
+            // Try to disable torch/flash if supported
+            const track = cameraStream.getVideoTracks()[0];
+            if (track && track.getCapabilities) {
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    await track.applyConstraints({ advanced: [{ torch: false }] });
+                }
+            }
 
             cameraPreview.srcObject = cameraStream;
             await cameraPreview.play();
@@ -929,27 +939,20 @@
         cropCanvas.height = cropHeight;
         cropCtx.drawImage(captureCanvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
 
-        // Apply image preprocessing for better OCR - Binarization (black & white)
+        // Apply simple grayscale + contrast boost for OCR
         const imageData = cropCtx.getImageData(0, 0, cropWidth, cropHeight);
         const data = imageData.data;
 
-        // First pass: calculate average brightness to find threshold
-        let totalBrightness = 0;
         for (let i = 0; i < data.length; i += 4) {
-            totalBrightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-        const avgBrightness = totalBrightness / (data.length / 4);
-        // Use adaptive threshold based on image brightness
-        const threshold = avgBrightness * 0.6;
-
-        // Second pass: convert to pure black and white (binarization)
-        for (let i = 0; i < data.length; i += 4) {
-            const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
-            // Make it pure black or white
-            const bw = brightness < threshold ? 0 : 255;
-            data[i] = bw;     // R
-            data[i + 1] = bw; // G
-            data[i + 2] = bw; // B
+            // Convert to grayscale
+            const gray = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            // Boost contrast
+            const contrast = 1.5;
+            const factor = (259 * (contrast * 100 + 255)) / (255 * (259 - contrast * 100));
+            const newGray = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
+            data[i] = newGray;     // R
+            data[i + 1] = newGray; // G
+            data[i + 2] = newGray; // B
         }
         cropCtx.putImageData(imageData, 0, 0);
 
@@ -969,8 +972,8 @@
         stopCameraBtn.disabled = true;
 
         try {
-            // Use Tesseract with optimized settings for license plates
-            const worker = await Tesseract.createWorker('eng', 1, {
+            // Use simple Tesseract.recognize with basic settings
+            const result = await Tesseract.recognize(cropCanvas, 'eng', {
                 logger: m => {
                     if (m.status === 'recognizing text') {
                         const pct = Math.round(m.progress * 100);
@@ -978,15 +981,6 @@
                     }
                 }
             });
-
-            // Set parameters for license plate recognition
-            await worker.setParameters({
-                tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
-                tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE,
-            });
-
-            const result = await worker.recognize(cropCanvas);
-            await worker.terminate();
 
             const rawText = result.data.text;
             console.log('OCR raw result:', rawText);
@@ -999,14 +993,6 @@
                 .replace(/^-|-$/g, '')
                 .trim();
 
-            // Common OCR mistakes for license plates - fix them
-            cleaned = cleaned
-                .replace(/O/g, '0')  // O often misread, plates usually use 0
-                .replace(/I/g, '1')  // I often misread as 1
-                .replace(/S/g, '5')  // S sometimes misread as 5
-                .replace(/B/g, '8')  // B sometimes misread as 8
-                // Then convert back if it looks wrong (letters in letter positions)
-                ;
 
             // If result is too long, try to extract plate-like patterns
             // Dutch plates are typically 6 chars like XX-99-XX or XXX-99-X

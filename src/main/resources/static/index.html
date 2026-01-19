@@ -240,6 +240,8 @@
 
         #camera-preview {
             width: 100%;
+            max-height: 300px;
+            object-fit: cover;
             border-radius: 8px;
             background: #1f2937;
             display: none;
@@ -352,8 +354,11 @@
             <button type="button" id="scan-plate-btn" class="camera-btn">
                 📷 Scan plate with camera
             </button>
-            <video id="camera-preview" autoplay playsinline></video>
+            <video id="camera-preview" autoplay playsinline muted></video>
             <canvas id="capture-canvas"></canvas>
+            <div id="captured-preview" style="display:none; margin-top:8px;">
+                <img id="captured-image" alt="Captured license plate" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="width:100%; border-radius:8px; border:2px solid #059669;" />
+            </div>
             <div class="camera-controls" id="camera-controls">
                 <button type="button" id="capture-btn">📸 Capture & Read</button>
                 <button type="button" id="stop-camera-btn">✕ Cancel</button>
@@ -420,6 +425,8 @@
     const captureBtn = document.getElementById('capture-btn');
     const stopCameraBtn = document.getElementById('stop-camera-btn');
     const ocrStatusEl = document.getElementById('ocr-status');
+    const capturedPreview = document.getElementById('captured-preview');
+    const capturedImage = document.getElementById('captured-image');
     let cameraStream = null;
 
     // Slot / automatic counter elements
@@ -773,27 +780,50 @@
 
     // ============ Camera Scanner Functions ============
 
+    // Check if camera is supported (requires HTTPS in production)
+    function isCameraSupported() {
+        return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    }
+
+    // Initialize camera button state
+    if (!isCameraSupported()) {
+        scanPlateBtn.textContent = '📷 Camera requires HTTPS';
+        scanPlateBtn.style.background = '#9ca3af';
+        scanPlateBtn.style.cursor = 'not-allowed';
+        scanPlateBtn.disabled = true;
+        ocrStatusEl.textContent = '⚠️ Camera scanning requires HTTPS. Use manual entry.';
+        ocrStatusEl.className = 'error';
+    }
+
     // Start camera
     scanPlateBtn.addEventListener('click', async () => {
+        if (!isCameraSupported()) {
+            ocrStatusEl.textContent = '❌ Camera not available. Requires HTTPS connection.';
+            ocrStatusEl.className = 'error';
+            return;
+        }
+
         try {
             ocrStatusEl.textContent = 'Starting camera...';
             ocrStatusEl.className = '';
+            capturedPreview.style.display = 'none';
 
             cameraStream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                    facingMode: 'environment',
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
                 }
             });
 
             cameraPreview.srcObject = cameraStream;
+            await cameraPreview.play();
             cameraPreview.style.display = 'block';
             cameraControls.classList.add('visible');
             scanPlateBtn.style.display = 'none';
             ocrStatusEl.textContent = '📷 Point camera at license plate, then tap "Capture & Read"';
         } catch (err) {
-            ocrStatusEl.textContent = '❌ Camera access denied: ' + err.message;
+            ocrStatusEl.textContent = '❌ Camera error: ' + (err.message || 'Access denied');
             ocrStatusEl.className = 'error';
             console.error('Camera error:', err);
         }
@@ -813,6 +843,7 @@
 
     stopCameraBtn.addEventListener('click', () => {
         stopCamera();
+        capturedPreview.style.display = 'none';
         ocrStatusEl.textContent = '';
         ocrStatusEl.className = '';
     });
@@ -827,10 +858,19 @@
         captureCanvas.height = cameraPreview.videoHeight;
         ctx.drawImage(cameraPreview, 0, 0);
 
+        // Show captured image preview
+        const imageDataUrl = captureCanvas.toDataURL('image/png');
+        capturedImage.src = imageDataUrl;
+        capturedPreview.style.display = 'block';
+
+        // Hide camera, keep controls for retry
+        cameraPreview.style.display = 'none';
+
         // Show processing state
         ocrStatusEl.textContent = '🔍 Reading plate... (this may take a few seconds)';
         ocrStatusEl.className = '';
         captureBtn.disabled = true;
+        captureBtn.textContent = '⏳ Processing...';
         stopCameraBtn.disabled = true;
 
         try {
@@ -849,32 +889,45 @@
             // Clean up: keep only alphanumeric, common plate format
             const cleaned = rawText
                 .toUpperCase()
-                .replace(/[^A-Z0-9]/g, '')
+                .replace(/[^A-Z0-9-]/g, '')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
                 .trim();
 
             console.log('Cleaned plate:', cleaned);
 
-            if (cleaned.length >= 3 && cleaned.length <= 12) {
+            if (cleaned.length >= 3 && cleaned.length <= 15) {
                 licensePlateInput.value = cleaned;
                 updatePlateStatus(cleaned);
-                ocrStatusEl.textContent = '✅ Detected: ' + cleaned;
+                ocrStatusEl.textContent = '✅ Detected: ' + cleaned + ' (edit if needed)';
                 ocrStatusEl.className = 'success';
                 stopCamera();
+                capturedPreview.style.display = 'none';
             } else if (cleaned.length > 0) {
-                ocrStatusEl.textContent = '⚠️ Partial read: "' + cleaned + '" - Try again or edit manually';
+                ocrStatusEl.textContent = '⚠️ Partial read: "' + cleaned + '" - Tap Capture again or edit manually';
                 ocrStatusEl.className = 'error';
                 licensePlateInput.value = cleaned;
                 updatePlateStatus(cleaned);
+                // Show camera again for retry
+                cameraPreview.style.display = 'block';
+                capturedPreview.style.display = 'none';
             } else {
                 ocrStatusEl.textContent = '⚠️ Could not read plate. Try again with better lighting/angle.';
                 ocrStatusEl.className = 'error';
+                // Show camera again for retry
+                cameraPreview.style.display = 'block';
+                capturedPreview.style.display = 'none';
             }
         } catch (err) {
             console.error('OCR error:', err);
-            ocrStatusEl.textContent = '❌ OCR error: ' + err.message;
+            ocrStatusEl.textContent = '❌ OCR error: ' + (err.message || 'Unknown error');
             ocrStatusEl.className = 'error';
+            // Show camera again for retry
+            cameraPreview.style.display = 'block';
+            capturedPreview.style.display = 'none';
         } finally {
             captureBtn.disabled = false;
+            captureBtn.textContent = '📸 Capture & Read';
             stopCameraBtn.disabled = false;
         }
     });

@@ -247,6 +247,39 @@
             display: none;
         }
 
+        .camera-wrapper {
+            position: relative;
+            display: none;
+        }
+
+        .camera-wrapper.visible {
+            display: block;
+        }
+
+        .scan-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60px;
+            border: 3px solid #059669;
+            border-radius: 8px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .scan-guide-text {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
         #capture-canvas {
             display: none;
         }
@@ -354,8 +387,14 @@
             <button type="button" id="scan-plate-btn" class="camera-btn">
                 📷 Scan plate with camera
             </button>
-            <video id="camera-preview" autoplay playsinline muted></video>
+            <div class="camera-wrapper" id="camera-wrapper">
+                <video id="camera-preview" autoplay playsinline muted></video>
+                <div class="scan-guide">
+                    <span class="scan-guide-text">Position plate inside this box</span>
+                </div>
+            </div>
             <canvas id="capture-canvas"></canvas>
+            <canvas id="crop-canvas" style="display:none;"></canvas>
             <div id="captured-preview" style="display:none; margin-top:8px;">
                 <img id="captured-image" alt="Captured license plate" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" style="width:100%; border-radius:8px; border:2px solid #059669;" />
             </div>
@@ -419,8 +458,10 @@
 
     // Camera scanner elements
     const scanPlateBtn = document.getElementById('scan-plate-btn');
+    const cameraWrapper = document.getElementById('camera-wrapper');
     const cameraPreview = document.getElementById('camera-preview');
     const captureCanvas = document.getElementById('capture-canvas');
+    const cropCanvas = document.getElementById('crop-canvas');
     const cameraControls = document.getElementById('camera-controls');
     const captureBtn = document.getElementById('capture-btn');
     const stopCameraBtn = document.getElementById('stop-camera-btn');
@@ -819,9 +860,10 @@
             cameraPreview.srcObject = cameraStream;
             await cameraPreview.play();
             cameraPreview.style.display = 'block';
+            cameraWrapper.classList.add('visible');
             cameraControls.classList.add('visible');
             scanPlateBtn.style.display = 'none';
-            ocrStatusEl.textContent = '📷 Point camera at license plate, then tap "Capture & Read"';
+            ocrStatusEl.textContent = '📷 Position plate inside the green box, then tap "Capture & Read"';
         } catch (err) {
             ocrStatusEl.textContent = '❌ Camera error: ' + (err.message || 'Access denied');
             ocrStatusEl.className = 'error';
@@ -837,6 +879,7 @@
         }
         cameraPreview.style.display = 'none';
         cameraPreview.srcObject = null;
+        cameraWrapper.classList.remove('visible');
         cameraControls.classList.remove('visible');
         scanPlateBtn.style.display = 'block';
     }
@@ -858,13 +901,57 @@
         captureCanvas.height = cameraPreview.videoHeight;
         ctx.drawImage(cameraPreview, 0, 0);
 
-        // Show captured image preview
-        const imageDataUrl = captureCanvas.toDataURL('image/png');
+        // Calculate crop region (matching the green guide box: 80% width, centered, 60px height ratio)
+        const videoWidth = cameraPreview.videoWidth;
+        const videoHeight = cameraPreview.videoHeight;
+        const displayWidth = cameraPreview.offsetWidth;
+        const displayHeight = cameraPreview.offsetHeight;
+
+        // Scale factor between actual video and displayed size
+        const scaleX = videoWidth / displayWidth;
+        const scaleY = videoHeight / displayHeight;
+
+        // Guide box dimensions (80% width, 60px height at display size)
+        const guideDisplayWidth = displayWidth * 0.8;
+        const guideDisplayHeight = 60;
+        const guideDisplayX = (displayWidth - guideDisplayWidth) / 2;
+        const guideDisplayY = (displayHeight - guideDisplayHeight) / 2;
+
+        // Convert to video coordinates
+        const cropX = guideDisplayX * scaleX;
+        const cropY = guideDisplayY * scaleY;
+        const cropWidth = guideDisplayWidth * scaleX;
+        const cropHeight = guideDisplayHeight * scaleY;
+
+        // Crop the image to just the guide box area
+        const cropCtx = cropCanvas.getContext('2d');
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+        cropCtx.drawImage(captureCanvas, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+        // Apply image preprocessing for better OCR
+        const imageData = cropCtx.getImageData(0, 0, cropWidth, cropHeight);
+        const data = imageData.data;
+
+        // Convert to grayscale and increase contrast
+        for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            // Increase contrast: make dark pixels darker, light pixels lighter
+            const contrast = avg < 128 ? avg * 0.5 : 128 + (avg - 128) * 1.5;
+            const final = Math.min(255, Math.max(0, contrast));
+            data[i] = final;     // R
+            data[i + 1] = final; // G
+            data[i + 2] = final; // B
+        }
+        cropCtx.putImageData(imageData, 0, 0);
+
+        // Show cropped image preview
+        const imageDataUrl = cropCanvas.toDataURL('image/png');
         capturedImage.src = imageDataUrl;
         capturedPreview.style.display = 'block';
 
-        // Hide camera, keep controls for retry
-        cameraPreview.style.display = 'none';
+        // Hide camera wrapper
+        cameraWrapper.classList.remove('visible');
 
         // Show processing state
         ocrStatusEl.textContent = '🔍 Reading plate... (this may take a few seconds)';
@@ -874,7 +961,7 @@
         stopCameraBtn.disabled = true;
 
         try {
-            const result = await Tesseract.recognize(captureCanvas, 'eng', {
+            const result = await Tesseract.recognize(cropCanvas, 'eng', {
                 logger: m => {
                     if (m.status === 'recognizing text') {
                         const pct = Math.round(m.progress * 100);
@@ -886,17 +973,32 @@
             const rawText = result.data.text;
             console.log('OCR raw result:', rawText);
 
-            // Clean up: keep only alphanumeric, common plate format
-            const cleaned = rawText
+            // Clean up: keep only alphanumeric and hyphens
+            let cleaned = rawText
                 .toUpperCase()
                 .replace(/[^A-Z0-9-]/g, '')
                 .replace(/-+/g, '-')
                 .replace(/^-|-$/g, '')
                 .trim();
 
+            // If result is too long, try to extract plate-like patterns
+            // Dutch plates are typically 6 chars like XX-99-XX or XXX-99-X
+            if (cleaned.length > 10) {
+                // Try to find a plate pattern (2-3 letters/numbers separated by hyphens)
+                const platePattern = /[A-Z0-9]{1,3}-?[A-Z0-9]{1,3}-?[A-Z0-9]{1,3}/g;
+                const matches = cleaned.match(platePattern);
+                if (matches && matches.length > 0) {
+                    // Take the first reasonable match
+                    cleaned = matches[0];
+                } else {
+                    // Just take first 8 characters
+                    cleaned = cleaned.substring(0, 8);
+                }
+            }
+
             console.log('Cleaned plate:', cleaned);
 
-            if (cleaned.length >= 3 && cleaned.length <= 15) {
+            if (cleaned.length >= 4 && cleaned.length <= 10) {
                 licensePlateInput.value = cleaned;
                 updatePlateStatus(cleaned);
                 ocrStatusEl.textContent = '✅ Detected: ' + cleaned + ' (edit if needed)';
@@ -909,13 +1011,13 @@
                 licensePlateInput.value = cleaned;
                 updatePlateStatus(cleaned);
                 // Show camera again for retry
-                cameraPreview.style.display = 'block';
+                cameraWrapper.classList.add('visible');
                 capturedPreview.style.display = 'none';
             } else {
-                ocrStatusEl.textContent = '⚠️ Could not read plate. Try again with better lighting/angle.';
+                ocrStatusEl.textContent = '⚠️ Could not read plate. Position plate inside the green box and try again.';
                 ocrStatusEl.className = 'error';
                 // Show camera again for retry
-                cameraPreview.style.display = 'block';
+                cameraWrapper.classList.add('visible');
                 capturedPreview.style.display = 'none';
             }
         } catch (err) {
@@ -923,7 +1025,7 @@
             ocrStatusEl.textContent = '❌ OCR error: ' + (err.message || 'Unknown error');
             ocrStatusEl.className = 'error';
             // Show camera again for retry
-            cameraPreview.style.display = 'block';
+            cameraWrapper.classList.add('visible');
             capturedPreview.style.display = 'none';
         } finally {
             captureBtn.disabled = false;

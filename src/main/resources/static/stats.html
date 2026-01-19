@@ -12,6 +12,48 @@
             margin: 0;
             padding: 0;
         }
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .user-header .app-name {
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+        }
+
+        .user-info .user-details {
+            text-align: right;
+        }
+
+        .user-info .user-name {
+            font-weight: 500;
+        }
+
+        .user-info .user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
         .container {
             max-width: 520px;
             margin: 40px auto;
@@ -109,6 +151,19 @@
     </style>
 </head>
 <body>
+
+<!-- User header bar -->
+<div class="user-header">
+    <span class="app-name">🚗 Parking Scanner</span>
+    <div class="user-info" id="user-info">
+        <div class="user-details">
+            <div class="user-name" id="user-name">Loading...</div>
+            <div class="user-role" id="user-role"></div>
+        </div>
+        <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+    </div>
+</div>
+
 <div class="container">
     <h1>Session Stats</h1>
     <div class="subtitle">
@@ -171,6 +226,31 @@
 </div>
 
 <script>
+    // User info elements
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+    const userAvatarEl = document.getElementById('user-avatar');
+
+    // Fetch and display current user
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me');
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || user.email || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+                    if (user.picture) {
+                        userAvatarEl.src = user.picture;
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
+    loadCurrentUser();
+
     const sessionSelect = document.getElementById('session');
     const form = document.getElementById('stats-form');
     const messageEl = document.getElementById('message');

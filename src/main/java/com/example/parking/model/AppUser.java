@@ -13,14 +13,23 @@ public class AppUser {
     @Column(nullable = false, unique = true, length = 64)
     private String username;
 
-    @Column(nullable = false)
-    private String password; // BCRYPT encoded
+    @Column(nullable = true) // nullable for OAuth2 users
+    private String password; // BCRYPT encoded (null for OAuth2 users)
 
     @Column(nullable = false, length = 32)
     private String role;     // "ROLE_ADMIN" veya "ROLE_USER"
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    @Column(unique = true)
+    private String email;    // For OAuth2 users
+
+    @Column(length = 32)
+    private String provider; // "google", "local", etc.
+
+    @Column
+    private String providerId; // OAuth2 provider's user ID
 
     public AppUser() {
     }
@@ -30,6 +39,17 @@ public class AppUser {
         this.password = password;
         this.role = role;
         this.enabled = enabled;
+        this.provider = "local";
+    }
+
+    // Constructor for OAuth2 users
+    public AppUser(String username, String email, String role, String provider, String providerId) {
+        this.username = username;
+        this.email = email;
+        this.role = role;
+        this.enabled = true;
+        this.provider = provider;
+        this.providerId = providerId;
     }
 
     public Long getId() {
@@ -66,5 +86,29 @@ public class AppUser {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
     }
 }

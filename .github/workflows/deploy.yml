@@ -39,7 +39,7 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: DB_PASSWORD
+          envs: DB_PASSWORD,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET
           command_timeout: 15m  # Increased from 5m to prevent premature timeouts
           script: |
             cd /home/ubuntu/parking-backend
@@ -56,6 +56,8 @@ jobs:
               --spring.datasource.url=jdbc:postgresql://localhost:5432/parking_db \
               --spring.datasource.username=parking_user \
               --spring.datasource.password="$DB_PASSWORD" \
+              --spring.security.oauth2.client.registration.google.client-id="$GOOGLE_CLIENT_ID" \
+              --spring.security.oauth2.client.registration.google.client-secret="$GOOGLE_CLIENT_SECRET" \
               --server.port=8080 \
               > app.log 2>&1 < /dev/null &
             
@@ -76,5 +78,7 @@ jobs:
             exit 1
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
 

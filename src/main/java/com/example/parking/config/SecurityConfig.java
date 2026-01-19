@@ -17,6 +17,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final CustomOAuth2UserService customOAuth2UserService;
+
+    public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
+        this.customOAuth2UserService = customOAuth2UserService;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -25,7 +31,8 @@ public class SecurityConfig {
                         // login sayfasi, static dosyalar serbest
                         .requestMatchers(
                                 "/login", "/login.html",
-                                "/css/**", "/js/**"
+                                "/css/**", "/js/**",
+                                "/oauth2/**", "/login/oauth2/**"
                         ).permitAll()
 
                         // sadece ADMIN görebilsin:
@@ -57,6 +64,13 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/", true)
                         .permitAll()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login.html")
+                        .defaultSuccessUrl("/", true)
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login.html?logout")
@@ -71,6 +85,11 @@ public class SecurityConfig {
         return username -> {
             AppUser appUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+
+            // Only allow form login for local users with password
+            if (appUser.getPassword() == null) {
+                throw new UsernameNotFoundException("User must login with OAuth2: " + username);
+            }
 
             return User.withUsername(appUser.getUsername())
                     .password(appUser.getPassword())

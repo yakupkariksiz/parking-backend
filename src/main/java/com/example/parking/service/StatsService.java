@@ -89,19 +89,15 @@ public class StatsService {
 
     public OccupancyChartResponse getOccupancyChartData(LocalDate startDate, LocalDate endDate) {
         // Default to last 7 days if not specified
-        if (endDate == null) {
-            endDate = LocalDate.now();
-        }
-        if (startDate == null) {
-            startDate = endDate.minusDays(6);
-        }
+        final LocalDate finalEndDate = (endDate != null) ? endDate : LocalDate.now();
+        final LocalDate finalStartDate = (startDate != null) ? startDate : finalEndDate.minusDays(6);
 
         // Get all scan entries in the date range
         List<ScanEntry> allEntries = scanEntryRepository.findAll().stream()
                 .filter(e -> e.getCreatedAt() != null)
                 .filter(e -> {
                     LocalDate entryDate = e.getCreatedAt().toLocalDate();
-                    return !entryDate.isBefore(startDate) && !entryDate.isAfter(endDate);
+                    return !entryDate.isBefore(finalStartDate) && !entryDate.isAfter(finalEndDate);
                 })
                 .toList();
 
@@ -113,12 +109,12 @@ public class StatsService {
         List<OccupancyDataPoint> dataPoints = new ArrayList<>();
         DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MMM dd");
 
-        LocalDate currentDate = startDate;
+        LocalDate currentDate = finalStartDate;
         int totalResidents = 0;
         int totalNonResidents = 0;
         int daysWithData = 0;
 
-        while (!currentDate.isAfter(endDate)) {
+        while (!currentDate.isAfter(finalEndDate)) {
             List<ScanEntry> dayEntries = entriesByDate.getOrDefault(currentDate, List.of());
 
             int residentCount = (int) dayEntries.stream()
@@ -157,8 +153,8 @@ public class StatsService {
                 dataPoints,
                 average,
                 PARKING_CAPACITY,
-                startDate.toString(),
-                endDate.toString()
+                finalStartDate.toString(),
+                finalEndDate.toString()
         );
     }
 }

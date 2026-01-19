@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Occupancy Chart – Parking Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .user-header .app-name {
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+        }
+
+        .user-info .user-details {
+            text-align: right;
+        }
+
+        .user-info .user-name {
+            font-weight: 500;
+        }
+
+        .user-info .user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-top: 0;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 24px;
+        }
+
+        /* Date range picker */
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .control-group input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .quick-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .quick-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .refresh-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .refresh-btn:hover {
+            background: #1d4ed8;
+        }
+
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 24px;
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .summary-card .label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .summary-card.residents .value {
+            color: #2563eb;
+        }
+
+        .summary-card.non-residents .value {
+            color: #dc2626;
+        }
+
+        .summary-card.capacity .value {
+            color: #16a34a;
+        }
+
+        .summary-card.over-capacity .value {
+            color: #dc2626;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.residents {
+            background: #3b82f6;
+        }
+
+        .legend-color.non-residents {
+            background: #ef4444;
+        }
+
+        .legend-color.capacity {
+            background: #22c55e;
+            height: 3px;
+            width: 24px;
+        }
+
+        /* Navigation */
+        .nav {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+<!-- User header bar -->
+<div class="user-header">
+    <span class="app-name">🚗 Parking Scanner</span>
+    <div class="user-info" id="user-info">
+        <div class="user-details">
+            <div class="user-name" id="user-name">Loading...</div>
+            <div class="user-role" id="user-role"></div>
+        </div>
+        <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+    </div>
+</div>
+
+<div class="container">
+    <h1>📊 Parking Occupancy Chart</h1>
+    <div class="subtitle">
+        Visualize parking usage: Residents vs Non-Residents compared to capacity (96 spots)
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <div class="control-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="control-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate">
+        </div>
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <div class="quick-btns">
+                <button class="quick-btn active" data-days="7">Last 7 days</button>
+                <button class="quick-btn" data-days="14">Last 14 days</button>
+                <button class="quick-btn" data-days="30">Last 30 days</button>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button class="refresh-btn" id="refresh-btn">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="value" id="total-scans">-</div>
+            <div class="label">Total Scans</div>
+        </div>
+        <div class="summary-card residents">
+            <div class="value" id="total-residents">-</div>
+            <div class="label">Residents</div>
+        </div>
+        <div class="summary-card non-residents">
+            <div class="value" id="total-non-residents">-</div>
+            <div class="label">Non-Residents</div>
+        </div>
+        <div class="summary-card capacity">
+            <div class="value" id="avg-occupancy">-</div>
+            <div class="label">Avg Occupancy %</div>
+        </div>
+        <div class="summary-card" id="over-capacity-card">
+            <div class="value" id="over-capacity-days">-</div>
+            <div class="label">Days Over Capacity</div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color residents"></div>
+            <span>Residents</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color non-residents"></div>
+            <span>Non-Residents</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color capacity"></div>
+            <span>Capacity (96)</span>
+        </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-container">
+        <canvas id="occupancyChart"></canvas>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+        <a href="/dashboard.html">← Dashboard</a> ·
+        <a href="/stats.html">Session Stats</a> ·
+        <a href="/residents.html">Manage Residents</a>
+    </div>
+</div>
+
+<script>
+    // User info
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+    const userAvatarEl = document.getElementById('user-avatar');
+
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me');
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || user.email || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+                    if (user.picture) {
+                        userAvatarEl.src = user.picture;
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
+    loadCurrentUser();
+
+    // Date controls
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const quickBtns = document.querySelectorAll('.quick-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+
+    // Set default dates (last 7 days)
+    function setDateRange(days) {
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - days + 1);
+
+        endDateInput.value = end.toISOString().split('T')[0];
+        startDateInput.value = start.toISOString().split('T')[0];
+    }
+
+    setDateRange(7);
+
+    // Quick button handlers
+    quickBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            quickBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setDateRange(parseInt(btn.dataset.days));
+            loadChartData();
+        });
+    });
+
+    refreshBtn.addEventListener('click', loadChartData);
+
+    // Chart instance
+    let occupancyChart = null;
+
+    async function loadChartData() {
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
+
+        try {
+            const res = await fetch(`/stats/occupancy?startDate=${startDate}&endDate=${endDate}`);
+            if (!res.ok) throw new Error('Failed to load data');
+
+            const data = await res.json();
+            renderChart(data);
+            updateSummary(data);
+        } catch (err) {
+            console.error('Error loading chart data:', err);
+        }
+    }
+
+    function renderChart(data) {
+        const ctx = document.getElementById('occupancyChart').getContext('2d');
+
+        // Prepare labels and data (including average as last column)
+        const labels = [...data.dataPoints.map(d => d.label), 'Average'];
+        const residentsData = [...data.dataPoints.map(d => d.residentCount), data.average.residentCount];
+        const nonResidentsData = [...data.dataPoints.map(d => d.nonResidentCount), data.average.nonResidentCount];
+
+        // Destroy existing chart if exists
+        if (occupancyChart) {
+            occupancyChart.destroy();
+        }
+
+        occupancyChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Residents',
+                        data: residentsData,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    },
+                    {
+                        label: 'Non-Residents',
+                        data: nonResidentsData,
+                        backgroundColor: '#ef4444',
+                        borderRadius: 4,
+                        borderSkipped: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        max: Math.max(data.capacity + 20, ...data.dataPoints.map(d => d.totalCount + 10)),
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Cars'
+                        }
+                    }
+                },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            capacityLine: {
+                                type: 'line',
+                                yMin: data.capacity,
+                                yMax: data.capacity,
+                                borderColor: '#22c55e',
+                                borderWidth: 3,
+                                borderDash: [6, 6],
+                                label: {
+                                    display: true,
+                                    content: `Capacity: ${data.capacity}`,
+                                    position: 'end',
+                                    backgroundColor: '#22c55e',
+                                    color: 'white',
+                                    font: {
+                                        size: 11,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterBody: function(context) {
+                                const dataIndex = context[0].dataIndex;
+                                let total, occupancyPct, isOverCapacity;
+
+                                if (dataIndex < data.dataPoints.length) {
+                                    const point = data.dataPoints[dataIndex];
+                                    total = point.totalCount;
+                                    occupancyPct = point.occupancyPercentage.toFixed(1);
+                                    isOverCapacity = point.overCapacity;
+                                } else {
+                                    total = data.average.totalCount;
+                                    occupancyPct = data.average.occupancyPercentage.toFixed(1);
+                                    isOverCapacity = data.average.overCapacity;
+                                }
+
+                                let lines = [
+                                    '',
+                                    `Total: ${total}`,
+                                    `Occupancy: ${occupancyPct}%`
+                                ];
+
+                                if (isOverCapacity) {
+                                    lines.push('⚠️ OVER CAPACITY');
+                                }
+
+                                return lines;
+                            }
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    function updateSummary(data) {
+        const totalScans = data.dataPoints.reduce((sum, d) => sum + d.totalCount, 0);
+        const totalResidents = data.dataPoints.reduce((sum, d) => sum + d.residentCount, 0);
+        const totalNonResidents = data.dataPoints.reduce((sum, d) => sum + d.nonResidentCount, 0);
+        const avgOccupancy = data.average.occupancyPercentage.toFixed(1);
+        const overCapacityDays = data.dataPoints.filter(d => d.overCapacity).length;
+
+        document.getElementById('total-scans').textContent = totalScans;
+        document.getElementById('total-residents').textContent = totalResidents;
+        document.getElementById('total-non-residents').textContent = totalNonResidents;
+        document.getElementById('avg-occupancy').textContent = avgOccupancy + '%';
+        document.getElementById('over-capacity-days').textContent = overCapacityDays;
+
+        // Highlight over-capacity card if there are over-capacity days
+        const overCapacityCard = document.getElementById('over-capacity-card');
+        if (overCapacityDays > 0) {
+            overCapacityCard.classList.add('over-capacity');
+        } else {
+            overCapacityCard.classList.remove('over-capacity');
+        }
+    }
+
+    // Initial load
+    loadChartData();
+</script>
+
+</body>
+</html>
+

@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/residents.html",
                                 "/stats.html",
+                                "/occupancy.html",
                                 "/residents/**",
                                 "/stats/**",
                                 "/locations/**",

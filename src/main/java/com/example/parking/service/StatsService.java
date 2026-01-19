@@ -1,5 +1,7 @@
 package com.example.parking.service;
 
+import com.example.parking.dto.OccupancyChartResponse;
+import com.example.parking.dto.OccupancyDataPoint;
 import com.example.parking.dto.ScanEntrySummary;
 import com.example.parking.dto.SessionStatsResponse;
 import com.example.parking.model.ScanEntry;
@@ -8,11 +10,17 @@ import com.example.parking.repository.ScanEntryRepository;
 import com.example.parking.repository.ScanSessionRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class StatsService {
+
+    private static final int PARKING_CAPACITY = 96;
 
     private final ScanEntryRepository scanEntryRepository;
     private final ScanSessionRepository scanSessionRepository;
@@ -77,5 +85,80 @@ public class StatsService {
 
     private double round(double value) {
         return Math.round(value * 10.0) / 10.0; // 1 decimal
+    }
+
+    public OccupancyChartResponse getOccupancyChartData(LocalDate startDate, LocalDate endDate) {
+        // Default to last 7 days if not specified
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(6);
+        }
+
+        // Get all scan entries in the date range
+        List<ScanEntry> allEntries = scanEntryRepository.findAll().stream()
+                .filter(e -> e.getCreatedAt() != null)
+                .filter(e -> {
+                    LocalDate entryDate = e.getCreatedAt().toLocalDate();
+                    return !entryDate.isBefore(startDate) && !entryDate.isAfter(endDate);
+                })
+                .toList();
+
+        // Group entries by date
+        Map<LocalDate, List<ScanEntry>> entriesByDate = allEntries.stream()
+                .collect(Collectors.groupingBy(e -> e.getCreatedAt().toLocalDate()));
+
+        // Create data points for each day in the range
+        List<OccupancyDataPoint> dataPoints = new ArrayList<>();
+        DateTimeFormatter labelFormatter = DateTimeFormatter.ofPattern("MMM dd");
+
+        LocalDate currentDate = startDate;
+        int totalResidents = 0;
+        int totalNonResidents = 0;
+        int daysWithData = 0;
+
+        while (!currentDate.isAfter(endDate)) {
+            List<ScanEntry> dayEntries = entriesByDate.getOrDefault(currentDate, List.of());
+
+            int residentCount = (int) dayEntries.stream()
+                    .filter(e -> Boolean.TRUE.equals(e.getResident()))
+                    .count();
+            int nonResidentCount = dayEntries.size() - residentCount;
+
+            dataPoints.add(new OccupancyDataPoint(
+                    currentDate,
+                    currentDate.format(labelFormatter),
+                    residentCount,
+                    nonResidentCount,
+                    PARKING_CAPACITY
+            ));
+
+            if (!dayEntries.isEmpty()) {
+                totalResidents += residentCount;
+                totalNonResidents += nonResidentCount;
+                daysWithData++;
+            }
+
+            currentDate = currentDate.plusDays(1);
+        }
+
+        // Calculate average
+        OccupancyDataPoint average;
+        if (daysWithData > 0) {
+            int avgResidents = totalResidents / daysWithData;
+            int avgNonResidents = totalNonResidents / daysWithData;
+            average = new OccupancyDataPoint(null, "Average", avgResidents, avgNonResidents, PARKING_CAPACITY);
+        } else {
+            average = new OccupancyDataPoint(null, "Average", 0, 0, PARKING_CAPACITY);
+        }
+
+        return new OccupancyChartResponse(
+                dataPoints,
+                average,
+                PARKING_CAPACITY,
+                startDate.toString(),
+                endDate.toString()
+        );
     }
 }

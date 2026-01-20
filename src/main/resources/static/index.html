@@ -259,56 +259,6 @@
             background: #dbeafe;
         }
 
-        /* Fix Awesomplete dropdown z-index and styling */
-        .license-plate-wrapper {
-            position: relative;
-            margin-bottom: 16px;
-        }
-
-        .license-plate-wrapper input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        .awesomplete {
-            position: relative;
-            display: block;
-            width: 100%;
-        }
-
-        .awesomplete > ul {
-            z-index: 200 !important;
-            background: white;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            max-height: 250px;
-            overflow-y: auto;
-            margin-top: 4px;
-            padding: 0;
-            list-style: none;
-        }
-
-        .awesomplete > ul > li {
-            padding: 10px 14px;
-            cursor: pointer;
-            font-size: 0.95rem;
-        }
-
-        .awesomplete > ul > li:hover,
-        .awesomplete > ul > li[aria-selected="true"] {
-            background: #eff6ff;
-            color: #2563eb;
-        }
-
-        .awesomplete mark {
-            background: #fef08a;
-            padding: 0;
-        }
 
         /* Simple full-screen overlay for side selection */
         .side-overlay {
@@ -616,17 +566,15 @@
         </button>
 
         <label for="licensePlate">License plate</label>
-        <div class="license-plate-wrapper">
-            <input
-                    type="text"
-                    id="licensePlate"
-                    name="licensePlate"
-                    placeholder="HHL32H"
-                    autocomplete="off"
-                    required
-                    oninput="this.value = this.value.toUpperCase()"
-            />
-        </div>
+        <input
+                type="text"
+                id="licensePlate"
+                name="licensePlate"
+                placeholder="HHL32H"
+                class="awesomplete"
+                required
+                oninput="this.value = this.value.toUpperCase()"
+        />
 
         <!-- Camera scanner for license plate OCR -->
         <div class="camera-container">
@@ -821,24 +769,16 @@
 
             knownPlatesSet = new Set(allPlatesUpper);
 
-            console.log('Loaded', allPlatesUpper.length, 'known plates for autocomplete');
-
             if (window.Awesomplete) {
                 if (!awesomplete) {
                     awesomplete = new Awesomplete(licensePlateInput, {
                         list: allPlatesUpper,
                         minChars: 1,
-                        maxItems: 15,
-                        autoFirst: true,
-                        sort: function(a, b) {
-                            // Sort by how well they match the input
-                            return a.value.localeCompare(b.value);
-                        }
+                        maxItems: 10,
+                        autoFirst: true
                     });
-                    console.log('Awesomplete initialized successfully');
                 } else {
                     awesomplete.list = allPlatesUpper;
-                    console.log('Awesomplete list updated');
                 }
             } else {
                 console.warn('Awesomplete not available yet');

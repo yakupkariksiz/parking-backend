@@ -222,6 +222,20 @@
             color: #111827;
         }
 
+        button.export-btn {
+            background: #059669;
+            color: white;
+        }
+
+        button.export-btn:hover {
+            background: #047857;
+        }
+
+        button.export-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
         .message {
             margin-top: 16px;
             text-align: center;
@@ -392,6 +406,7 @@
         <button id="allPage">All</button>
         <button id="nextPage">Next</button>
         <button id="deleteSelected" class="danger">Delete selected</button>
+        <button id="exportExcel" class="export-btn">📥 Export Excel</button>
         <span class="page-info" id="pageInfo"></span>
     </div>
 
@@ -453,6 +468,7 @@
     const nextPageBtn = document.getElementById('nextPage');
     const allPageBtn = document.getElementById('allPage');
     const deleteSelectedBtn = document.getElementById('deleteSelected');
+    const exportExcelBtn = document.getElementById('exportExcel');
     const pageInfoEl = document.getElementById('pageInfo');
 
     let allResidents = [];
@@ -776,6 +792,49 @@
         } catch (err) {
             messageEl.textContent = 'Network error: ' + err.message;
             messageEl.className = 'message error';
+        }
+    });
+
+    // Export to Excel
+    exportExcelBtn.addEventListener('click', async () => {
+        exportExcelBtn.disabled = true;
+        exportExcelBtn.textContent = '⏳ Exporting...';
+
+        try {
+            const response = await fetch('/residents/export/excel');
+            if (!response.ok) {
+                throw new Error('Export failed: ' + response.status);
+            }
+
+            // Get filename from Content-Disposition header or use default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'residents.xlsx';
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (match && match[1]) {
+                    filename = match[1].replace(/['"]/g, '');
+                }
+            }
+
+            // Download the file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            messageEl.textContent = 'Excel exported successfully ✅';
+            messageEl.className = 'message success';
+        } catch (err) {
+            messageEl.textContent = 'Export failed: ' + err.message;
+            messageEl.className = 'message error';
+        } finally {
+            exportExcelBtn.disabled = false;
+            exportExcelBtn.textContent = '📥 Export Excel';
         }
     });
 

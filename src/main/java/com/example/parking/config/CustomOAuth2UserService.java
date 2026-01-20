@@ -25,7 +25,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     // List of allowed email addresses for ADMIN role
     private static final List<String> ALLOWED_ADMIN_EMAILS = List.of(
-            "yakupkariksiz@gmail.com"  // Add your Google email here
+            "yakupkariksiz@gmail.com",
+            "mustafa.tapan86@gmail.com"
     );
 
     public CustomOAuth2UserService(AppUserRepository appUserRepository) {

@@ -31,6 +31,100 @@
 
         .user-header .app-name {
             font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+
+        .user-header .app-name:hover {
+            color: #94a3b8;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Dropdown Menu */
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-dropdown-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-dropdown-btn:hover {
+            background: #475569;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .nav-dropdown-content.show {
+            display: block;
+        }
+
+        .nav-dropdown-content a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+
+        .nav-dropdown-content a:hover {
+            background: #f1f5f9;
+        }
+
+        .nav-dropdown-content a.active {
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-content .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4px 0;
+        }
+
+        .nav-dropdown-content .menu-icon {
+            width: 18px;
+            text-align: center;
+        }
+
+        .nav-dropdown-content .admin-badge {
+            font-size: 0.65rem;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
         }
 
         .user-info {
@@ -399,13 +493,34 @@
 
 <!-- User header bar -->
 <div class="user-header">
-    <span class="app-name">🚗 Parking Scanner</span>
-    <div class="user-info" id="user-info">
-        <div class="user-details">
-            <div class="user-name" id="user-name">Loading...</div>
-            <div class="user-role" id="user-role"></div>
+    <a href="/dashboard.html" class="app-name">🚗 Parking Scanner</a>
+    <div class="header-right">
+        <!-- Navigation Dropdown -->
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
+                <span>☰</span> Menu
+            </button>
+            <div class="nav-dropdown-content" id="nav-dropdown-content">
+                <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
+                <a href="/index.html" class="active"><span class="menu-icon">📷</span> Scan Plates</a>
+                <div class="divider"></div>
+                <a href="/residents.html" class="admin-only-link"><span class="menu-icon">👥</span> Residents <span class="admin-badge">Admin</span></a>
+                <a href="/stats.html" class="admin-only-link"><span class="menu-icon">📊</span> Session Stats <span class="admin-badge">Admin</span></a>
+                <a href="/occupancy.html" class="admin-only-link"><span class="menu-icon">📈</span> Occupancy Chart <span class="admin-badge">Admin</span></a>
+                <div class="divider"></div>
+                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;"><span class="menu-icon">🚪</span> Logout</a>
+            </div>
         </div>
-        <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        <form id="logout-form" method="post" action="/logout" style="display:none;"></form>
+
+        <!-- User Info -->
+        <div class="user-info" id="user-info">
+            <div class="user-details">
+                <div class="user-name" id="user-name">Loading...</div>
+                <div class="user-role" id="user-role"></div>
+            </div>
+            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        </div>
     </div>
 </div>
 
@@ -519,6 +634,20 @@
 </div>
 
 <script>
+    // Dropdown menu toggle
+    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
+    const navDropdownContent = document.getElementById('nav-dropdown-content');
+
+    navDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navDropdownContent.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+        navDropdownContent.classList.remove('show');
+    });
+
     // User info elements
     const userNameEl = document.getElementById('user-name');
     const userRoleEl = document.getElementById('user-role');
@@ -535,6 +664,12 @@
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
                     if (user.picture) {
                         userAvatarEl.src = user.picture;
+                    }
+
+                    // Show/hide admin-only menu items
+                    const adminLinks = document.querySelectorAll('.admin-only-link');
+                    if (user.role !== 'ROLE_ADMIN') {
+                        adminLinks.forEach(link => link.style.display = 'none');
                     }
                 }
             }

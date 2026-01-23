@@ -420,6 +420,47 @@
             cursor: default;
         }
 
+        .spot-adjust-btn {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border-radius: 50%;
+            border: 2px solid #2563eb;
+            background: white;
+            color: #2563eb;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            line-height: 1;
+        }
+
+        .spot-adjust-btn:hover {
+            background: #2563eb;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .spot-adjust-btn:active {
+            transform: scale(0.95);
+        }
+
+        .spot-adjust-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #9ca3af;
+            color: #9ca3af;
+        }
+
+        .spot-adjust-btn:disabled:hover {
+            background: white;
+            color: #9ca3af;
+            transform: none;
+        }
+
         /* Camera scanner styles */
         .camera-container {
             margin-bottom: 10px;
@@ -647,9 +688,11 @@
 
         <!-- Automatic location counter row -->
         <div id="slot-row" class="slot-row" style="display:none;">
-            <div>
+            <div style="display:flex; align-items:center; gap:8px;">
                 <span style="color:#6b7280;">Current spot:</span>
+                <button type="button" id="spot-dec" class="spot-adjust-btn" title="Decrease spot number">-</button>
                 <span id="slot-label" class="slot-label">-</span>
+                <button type="button" id="spot-inc" class="spot-adjust-btn" title="Increase spot number">+</button>
             </div>
             <div class="slot-controls">
                 <button type="button" id="slot-prev" class="slot-btn">← Prev</button>
@@ -950,6 +993,14 @@
         // Next is never disabled (you can keep going forward as needed)
         slotNextBtn.disabled = false;
 
+        // Update spot adjustment buttons if they exist (initialized later in the code)
+        const spotDecBtn = document.getElementById('spot-dec');
+        const spotIncBtn = document.getElementById('spot-inc');
+        if (spotDecBtn && spotIncBtn) {
+            spotDecBtn.disabled = currentIndex <= 1;
+            spotIncBtn.disabled = false;
+        }
+
         // Pre-fill license plate if there's history for this slot
         if (storedPlate) {
             licensePlateInput.value = storedPlate;
@@ -1000,6 +1051,42 @@
         }
     });
     slotNextBtn.addEventListener('click', goNextSlot);
+
+    // Spot adjustment buttons - only change the spot number, don't affect anything else
+    const spotDecBtn = document.getElementById('spot-dec');
+    const spotIncBtn = document.getElementById('spot-inc');
+
+    function updateSpotOnly() {
+        if (!selectedSide) return;
+
+        // Update just the label, don't load history or clear input
+        const location = getCurrentLocation();
+        const storedPlate = getPlateForLocation(location);
+        const indicator = storedPlate ? ' ✓' : '';
+        slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex) + indicator;
+
+        if (storedPlate) {
+            slotLabelEl.style.color = '#15803d';
+        } else {
+            slotLabelEl.style.color = '#111827';
+        }
+
+        // Update button states
+        spotDecBtn.disabled = currentIndex <= 1;
+        spotIncBtn.disabled = false;
+    }
+
+    spotDecBtn.addEventListener('click', () => {
+        if (currentIndex > 1) {
+            currentIndex--;
+            updateSpotOnly();
+        }
+    });
+
+    spotIncBtn.addEventListener('click', () => {
+        currentIndex++;
+        updateSpotOnly();
+    });
 
     // Clear history button
     const clearHistoryBtn = document.getElementById('clear-history-btn');

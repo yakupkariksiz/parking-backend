@@ -505,9 +505,9 @@
                 <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
                 <a href="/index.html" class="active"><span class="menu-icon">📷</span> Scan Plates</a>
                 <div class="divider"></div>
-                <a href="/residents.html" class="admin-only-link"><span class="menu-icon">👥</span> Residents <span class="admin-badge">Admin</span></a>
-                <a href="/stats.html" class="admin-only-link"><span class="menu-icon">📊</span> Session Stats <span class="admin-badge">Admin</span></a>
-                <a href="/occupancy.html" class="admin-only-link"><span class="menu-icon">📈</span> Occupancy Chart <span class="admin-badge">Admin</span></a>
+                <a href="/residents.html"><span class="menu-icon">👥</span> Residents</a>
+                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
+                <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
                 <a href="#" onclick="document.getElementById('logout-form').submit(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
@@ -665,12 +665,6 @@
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
                     if (user.picture) {
                         userAvatarEl.src = user.picture;
-                    }
-
-                    // Show/hide admin-only menu items
-                    const adminLinks = document.querySelectorAll('.admin-only-link');
-                    if (user.role !== 'ROLE_ADMIN') {
-                        adminLinks.forEach(link => link.style.display = 'none');
                     }
                 }
             }

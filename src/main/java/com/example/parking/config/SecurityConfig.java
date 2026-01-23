@@ -36,24 +36,20 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // sadece ADMIN görebilsin:
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // tüm login olmuş kullanıcılar (ADMIN + USER) erişebilir:
                         .requestMatchers(
+                                "/",              // root redirects to dashboard
+                                "/dashboard.html",
+                                "/index.html",
                                 "/residents.html",
                                 "/stats.html",
                                 "/occupancy.html",
                                 "/residents/**",
                                 "/stats/**",
                                 "/locations/**",
-                                "/plates/**"
-                        ).hasAuthority("ROLE_ADMIN")
-
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-
-
-                        // sadece login olmus herkes (ADMIN + USER):
-                        .requestMatchers(
-                                "/",              // root redirects to dashboard
-                                "/dashboard.html",
-                                "/index.html",
+                                "/plates/**",
                                 "/scan-entries/**"
                         ).authenticated()
 

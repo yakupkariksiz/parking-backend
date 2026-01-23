@@ -281,10 +281,10 @@
             <div class="nav-dropdown-content" id="nav-dropdown-content">
                 <a href="/dashboard.html" class="active"><span class="menu-icon">🏠</span> Dashboard</a>
                 <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
-                <div class="divider admin-only-link"></div>
-                <a href="/residents.html" class="admin-only-link"><span class="menu-icon">👥</span> Residents <span class="admin-badge-menu">Admin</span></a>
-                <a href="/stats.html" class="admin-only-link"><span class="menu-icon">📊</span> Session Stats <span class="admin-badge-menu">Admin</span></a>
-                <a href="/occupancy.html" class="admin-only-link"><span class="menu-icon">📈</span> Occupancy Chart <span class="admin-badge-menu">Admin</span></a>
+                <div class="divider"></div>
+                <a href="/residents.html"><span class="menu-icon">👥</span> Residents</a>
+                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
+                <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
                 <a href="#" onclick="document.getElementById('logout-form').submit(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
@@ -314,24 +314,22 @@
             <p>Scan license plates during parking patrol sessions.</p>
         </a>
 
-        <!-- Residents - admin only -->
-        <a href="/residents.html" class="menu-card residents admin-only" id="residents-card">
+        <!-- Residents -->
+        <a href="/residents.html" class="menu-card residents" id="residents-card">
             <div class="icon">👥</div>
             <h2>Manage Residents</h2>
             <p>Add, edit, or remove residents and their license plates.</p>
-            <span class="admin-badge">Admin Only</span>
         </a>
 
-        <!-- Stats - admin only -->
-        <a href="/stats.html" class="menu-card stats admin-only" id="stats-card">
+        <!-- Stats -->
+        <a href="/stats.html" class="menu-card stats" id="stats-card">
             <div class="icon">📊</div>
             <h2>Session Statistics</h2>
             <p>See scan session stats and resident/outsider breakdowns.</p>
-            <span class="admin-badge">Admin Only</span>
         </a>
 
-        <!-- Occupancy Chart - admin only -->
-        <a href="/occupancy.html" class="menu-card stats admin-only" id="occupancy-card">
+        <!-- Occupancy Chart -->
+        <a href="/occupancy.html" class="menu-card stats" id="occupancy-card">
             <div class="icon">📈</div>
             <h2>Occupancy Chart</h2>
             <p>Visualize parking usage: Residents vs Non-Residents over time.</p>
@@ -401,14 +399,8 @@
                         userAvatarEl.src = user.picture;
                     }
 
-                    // Show admin-only items if user is admin
-                    if (user.role === 'ROLE_ADMIN') {
-                        adminOnlyElements.forEach(el => el.classList.add('visible'));
-                        loadQuickStats();
-                    } else {
-                        // Hide admin-only menu items for non-admins
-                        adminOnlyLinks.forEach(link => link.style.display = 'none');
-                    }
+                    // Load quick stats for all authenticated users
+                    loadQuickStats();
                 }
             }
         } catch (err) {

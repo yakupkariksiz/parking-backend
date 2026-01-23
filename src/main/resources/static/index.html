@@ -390,16 +390,19 @@
             gap: 8px;
             font-size: 0.9rem;
             margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
         .slot-label {
             font-weight: 600;
             color: #111827;
+            transition: color 0.2s;
         }
 
         .slot-controls {
             display: flex;
             gap: 6px;
+            flex-wrap: wrap;
         }
 
         .slot-btn {
@@ -649,8 +652,9 @@
                 <span id="slot-label" class="slot-label">-</span>
             </div>
             <div class="slot-controls">
-                <button type="button" id="slot-prev" class="slot-btn">Prev</button>
-                <button type="button" id="slot-next" class="slot-btn">Next</button>
+                <button type="button" id="slot-prev" class="slot-btn">← Prev</button>
+                <button type="button" id="slot-next" class="slot-btn">Next →</button>
+                <button type="button" id="clear-history-btn" class="slot-btn" style="background:#ef4444;color:white;" title="Clear all saved entries">Clear History</button>
             </div>
         </div>
 
@@ -762,6 +766,44 @@
     // --- Persistence helpers for current spot per side ---
     const STORAGE_KEY_NORTH = 'scanner_current_index_north';
     const STORAGE_KEY_SOUTH = 'scanner_current_index_south';
+    const STORAGE_KEY_HISTORY = 'scanner_plate_history';
+
+    // History tracking: Map of location -> license plate
+    // Example: { "NORTH-01": "ABC123", "NORTH-02": "XYZ789", "SOUTH-15": "DEF456" }
+    let plateHistory = {};
+
+    // Load plate history from localStorage
+    function loadPlateHistory() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY_HISTORY);
+            if (stored) {
+                plateHistory = JSON.parse(stored);
+            }
+        } catch (err) {
+            console.warn('Failed to load plate history', err);
+            plateHistory = {};
+        }
+    }
+
+    // Save plate history to localStorage
+    function savePlateHistory() {
+        try {
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(plateHistory));
+        } catch (err) {
+            console.warn('Failed to save plate history', err);
+        }
+    }
+
+    // Store a plate for a specific location
+    function storePlateForLocation(location, plate) {
+        plateHistory[location] = plate;
+        savePlateHistory();
+    }
+
+    // Get the stored plate for a specific location
+    function getPlateForLocation(location) {
+        return plateHistory[location] || null;
+    }
 
     // Known plates + Awesomplete for license plate
     let knownPlatesSet = new Set();
@@ -770,6 +812,9 @@
     // Track which plates belong to residents vs outsiders
     let residentPlatesSet = new Set();
     let outsiderPlatesSet = new Set();
+
+    // Load plate history on page load
+    loadPlateHistory();
 
     async function loadKnownPlates() {
         try {
@@ -885,12 +930,46 @@
             return;
         }
         slotRow.style.display = 'flex';
-        slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex);
+
+        const location = getCurrentLocation();
+        const storedPlate = getPlateForLocation(location);
+
+        // Add indicator if this slot has been scanned before
+        const indicator = storedPlate ? ' ✓' : '';
+        slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex) + indicator;
+
+        // Change color if already scanned
+        if (storedPlate) {
+            slotLabelEl.style.color = '#15803d';
+        } else {
+            slotLabelEl.style.color = '#111827';
+        }
 
         // Prev is disabled on the first spot
         slotPrevBtn.disabled = currentIndex <= 1;
         // Next is never disabled (you can keep going forward as needed)
         slotNextBtn.disabled = false;
+
+        // Pre-fill license plate if there's history for this slot
+        if (storedPlate) {
+            licensePlateInput.value = storedPlate;
+            updatePlateStatus(storedPlate);
+            messageEl.textContent = '📝 Previous entry loaded';
+            messageEl.className = 'message';
+            messageEl.style.color = '#2563eb';
+            // Clear message after 2 seconds
+            setTimeout(() => {
+                if (messageEl.textContent === '📝 Previous entry loaded') {
+                    messageEl.textContent = '';
+                }
+            }, 2000);
+        } else {
+            // Clear the input if no history
+            if (licensePlateInput.value) {
+                licensePlateInput.value = '';
+                updatePlateStatus('');
+            }
+        }
     }
 
     function getCurrentLocation() {
@@ -921,6 +1000,24 @@
         }
     });
     slotNextBtn.addEventListener('click', goNextSlot);
+
+    // Clear history button
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    clearHistoryBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear all saved license plate entries? This cannot be undone.')) {
+            plateHistory = {};
+            savePlateHistory();
+            updateSlotUI();
+            messageEl.textContent = '🗑️ History cleared';
+            messageEl.className = 'message';
+            messageEl.style.color = '#dc2626';
+            setTimeout(() => {
+                if (messageEl.textContent === '🗑️ History cleared') {
+                    messageEl.textContent = '';
+                }
+            }, 2000);
+        }
+    });
 
     changeSideBtn.addEventListener('click', () => {
         // Show the overlay again so user can switch side; keep previously selected side in dropdown
@@ -1074,6 +1171,11 @@
             });
 
             if (response.ok) {
+                // Store the license plate in history before clearing
+                if (locationValue) {
+                    storePlateForLocation(locationValue, licensePlate);
+                }
+
                 messageEl.textContent = 'Saved ✅';
                 messageEl.classList.add('success');
                 licensePlateInput.value = '';

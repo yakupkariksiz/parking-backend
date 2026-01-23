@@ -44,9 +44,9 @@ public class SecurityConfig {
                                 "/stats/**",
                                 "/locations/**",
                                 "/plates/**"
-                        ).hasRole("ADMIN")
+                        ).hasAuthority("ROLE_ADMIN")
 
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
 
 
                         // sadece login olmus herkes (ADMIN + USER):

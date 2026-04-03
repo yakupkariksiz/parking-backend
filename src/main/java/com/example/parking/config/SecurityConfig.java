@@ -4,77 +4,68 @@ import com.example.parking.model.AppUser;
 import com.example.parking.repository.AppUserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final CustomOAuth2UserService customOAuth2UserService;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
-        this.customOAuth2UserService = customOAuth2UserService;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // iç tool, basit tutuyoruz
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
-                        // login sayfasi, static dosyalar serbest
+                        // Public endpoints
                         .requestMatchers(
-                                "/login", "/login.html",
-                                "/css/**", "/js/**",
-                                "/oauth2/**", "/login/oauth2/**"
+                                "/api/auth/login",
+                                "/login.html",
+                                "/css/**", "/js/**"
                         ).permitAll()
 
-                        // sadece ADMIN görebilsin:
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
+                        // Admin-only endpoints
+                        .requestMatchers("/admin/**", "/api/admin/**").hasAuthority("ROLE_ADMIN")
 
-                        // tüm login olmuş kullanıcılar (ADMIN + USER) erişebilir:
+                        // All authenticated users
                         .requestMatchers(
-                                "/",              // root redirects to dashboard
+                                "/",
                                 "/dashboard.html",
                                 "/index.html",
                                 "/residents.html",
                                 "/stats.html",
                                 "/occupancy.html",
+                                "/users.html",
+                                "/api/user/**",
                                 "/residents/**",
                                 "/stats/**",
                                 "/locations/**",
                                 "/plates/**",
-                                "/scan-entries/**"
+                                "/scan-entries/**",
+                                "/scan-sessions/**"
                         ).authenticated()
 
-                        // kalan her şey default: authenticated
                         .anyRequest().authenticated()
                 )
-                .formLogin(form -> form
-                        .loginPage("/login.html")
-                        .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/dashboard.html", true)
-                        .permitAll()
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login.html")
-                        .defaultSuccessUrl("/dashboard.html", true)
-                        .failureUrl("/login.html?error=oauth2")
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login.html?logout")
-                        .permitAll()
-                );
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -85,14 +76,12 @@ public class SecurityConfig {
             AppUser appUser = userRepository.findByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-            // Only allow form login for local users with password
             if (appUser.getPassword() == null) {
-                throw new UsernameNotFoundException("User must login with OAuth2: " + username);
+                throw new UsernameNotFoundException("User has no password set: " + username);
             }
 
             return User.withUsername(appUser.getUsername())
                     .password(appUser.getPassword())
-                    // stored "ROLE_ADMIN" veya "ROLE_USER"; .roles yerine .authorities kullanıyoruz
                     .authorities(appUser.getRole())
                     .disabled(!appUser.isEnabled())
                     .build();
@@ -102,5 +91,10 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }

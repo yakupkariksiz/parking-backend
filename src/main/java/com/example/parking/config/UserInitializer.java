@@ -15,26 +15,26 @@ public class UserInitializer {
                                 PasswordEncoder passwordEncoder) {
         return args -> {
             if (userRepository.count() > 0) {
-                return; // zaten kullanici var, dokunma
+                return; // users already exist, skip seeding
             }
 
             AppUser admin = new AppUser(
                     "admin",
-                    passwordEncoder.encode("admin123"), // ŞİFREYİ DEĞİŞTİR
+                    passwordEncoder.encode("admin123"), // CHANGE PASSWORD
                     "ROLE_ADMIN",
                     true
             );
 
             AppUser yakup = new AppUser(
                     "yakup",
-                    passwordEncoder.encode("karixiz123"), // ŞİFREYİ DEĞİŞTİR
+                    passwordEncoder.encode("karixiz123"), // CHANGE PASSWORD
                     "ROLE_ADMIN",
                     true
             );
 
             AppUser user = new AppUser(
                     "scanner",
-                    passwordEncoder.encode("scanner123"), // ŞİFREYİ DEĞİŞTİR
+                    passwordEncoder.encode("scanner123"), // CHANGE PASSWORD
                     "ROLE_USER",
                     true
             );

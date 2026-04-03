@@ -2,7 +2,6 @@ package com.example.parking.controller;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,23 +22,8 @@ public class UserController {
         }
 
         userInfo.put("authenticated", true);
+        userInfo.put("name", auth.getName());
 
-        // Check if OAuth2 user
-        if (auth.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) auth.getPrincipal();
-            userInfo.put("name", oauth2User.getAttribute("name"));
-            userInfo.put("email", oauth2User.getAttribute("email"));
-            userInfo.put("picture", oauth2User.getAttribute("picture"));
-            userInfo.put("provider", "google");
-        } else {
-            // Regular form login user
-            userInfo.put("name", auth.getName());
-            userInfo.put("email", null);
-            userInfo.put("picture", null);
-            userInfo.put("provider", "local");
-        }
-
-        // Add role
         String role = auth.getAuthorities().stream()
                 .findFirst()
                 .map(a -> a.getAuthority())
@@ -49,4 +33,3 @@ public class UserController {
         return userInfo;
     }
 }
-

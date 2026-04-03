@@ -286,10 +286,11 @@
                 <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
                 <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
-                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;"><span class="menu-icon">🚪</span> Logout</a>
+                <a href="/users.html" class="admin-only-link"><span class="menu-icon">👤</span> User Management <span class="admin-badge-menu">Admin</span></a>
+                <div class="divider"></div>
+                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
         </div>
-        <form id="logout-form" method="post" action="/logout" style="display:none;"></form>
         <div class="user-info">
             <div class="user-details">
                 <div class="user-name" id="user-name">Loading...</div>
@@ -366,6 +367,28 @@
 </div>
 
 <script>
+    // --- JWT Auth Helpers ---
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getAuthHeaders(extra) {
+        const headers = { 'Authorization': 'Bearer ' + getToken() };
+        if (extra) Object.assign(headers, extra);
+        return headers;
+    }
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('jwt_username');
+        localStorage.removeItem('jwt_role');
+        window.location.href = '/login.html?logout';
+    }
+    function checkAuth(res) {
+        if (res.status === 401 || res.status === 403) {
+            logout();
+            return false;
+        }
+        return true;
+    }
+    if (!getToken()) { window.location.href = '/login.html'; }
+
     // Dropdown menu toggle
     const navDropdownBtn = document.getElementById('nav-dropdown-btn');
     const navDropdownContent = document.getElementById('nav-dropdown-content');
@@ -389,14 +412,17 @@
     // Fetch and display current user
     async function loadCurrentUser() {
         try {
-            const res = await fetch('/api/user/me');
+            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
             if (res.ok) {
                 const user = await res.json();
                 if (user.authenticated) {
-                    userNameEl.textContent = user.name || user.email || 'User';
+                    userNameEl.textContent = user.name || 'User';
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
-                    if (user.picture) {
-                        userAvatarEl.src = user.picture;
+
+                    // Show admin-only elements
+                    if (user.role === 'ROLE_ADMIN') {
+                        adminOnlyElements.forEach(el => el.classList.add('visible'));
                     }
 
                     // Load quick stats for all authenticated users
@@ -408,18 +434,18 @@
         }
     }
 
-    // Load quick stats for admins
+    // Load quick stats
     async function loadQuickStats() {
         try {
             // Load residents count
-            const residentsRes = await fetch('/residents');
+            const residentsRes = await fetch('/residents', { headers: getAuthHeaders() });
             if (residentsRes.ok) {
                 const residents = await residentsRes.json();
                 document.getElementById('total-residents').textContent = residents.length || 0;
             }
 
             // Load sessions count
-            const sessionsRes = await fetch('/scan-sessions');
+            const sessionsRes = await fetch('/scan-sessions', { headers: getAuthHeaders() });
             if (sessionsRes.ok) {
                 const sessions = await sessionsRes.json();
                 document.getElementById('total-sessions').textContent = sessions.length || 0;

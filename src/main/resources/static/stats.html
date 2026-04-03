@@ -232,10 +232,9 @@
                 <a href="/stats.html" class="active"><span class="menu-icon">📊</span> Session Stats</a>
                 <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
-                <a href="#" onclick="document.getElementById('logout-form').submit(); return false;"><span class="menu-icon">🚪</span> Logout</a>
+                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
         </div>
-        <form id="logout-form" method="post" action="/logout" style="display:none;"></form>
         <div class="user-info" id="user-info">
             <div class="user-details">
                 <div class="user-name" id="user-name">Loading...</div>
@@ -309,6 +308,28 @@
 </div>
 
 <script>
+    // --- JWT Auth Helpers ---
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getAuthHeaders(extra) {
+        const headers = { 'Authorization': 'Bearer ' + getToken() };
+        if (extra) Object.assign(headers, extra);
+        return headers;
+    }
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('jwt_username');
+        localStorage.removeItem('jwt_role');
+        window.location.href = '/login.html?logout';
+    }
+    function checkAuth(res) {
+        if (res.status === 401 || res.status === 403) {
+            logout();
+            return false;
+        }
+        return true;
+    }
+    if (!getToken()) { window.location.href = '/login.html'; }
+
     // Dropdown menu toggle
     const navDropdownBtn = document.getElementById('nav-dropdown-btn');
     const navDropdownContent = document.getElementById('nav-dropdown-content');
@@ -328,15 +349,13 @@
     // Fetch and display current user
     async function loadCurrentUser() {
         try {
-            const res = await fetch('/api/user/me');
+            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
             if (res.ok) {
                 const user = await res.json();
                 if (user.authenticated) {
-                    userNameEl.textContent = user.name || user.email || 'User';
+                    userNameEl.textContent = user.name || 'User';
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
-                    if (user.picture) {
-                        userAvatarEl.src = user.picture;
-                    }
                 }
             }
         } catch (err) {
@@ -362,7 +381,7 @@
 
     async function loadSessions() {
         try {
-            const response = await fetch('/scan-sessions');
+            const response = await fetch('/scan-sessions', { headers: getAuthHeaders() });
             if (!response.ok) {
                 sessionSelect.innerHTML = '<option value="">Failed to load sessions</option>';
                 return;
@@ -408,7 +427,8 @@
 
         try {
             const response = await fetch(`/scan-sessions/${encodeURIComponent(sessionId)}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: getAuthHeaders()
             });
 
             if (!response.ok) {
@@ -447,7 +467,7 @@
         submitBtn.textContent = 'Loading...';
 
         try {
-            const response = await fetch(`/stats/session/${encodeURIComponent(sessionId)}`);
+            const response = await fetch(`/stats/session/${encodeURIComponent(sessionId)}`, { headers: getAuthHeaders() });
 
             if (!response.ok) {
                 messageEl.textContent = 'Error: ' + response.status;

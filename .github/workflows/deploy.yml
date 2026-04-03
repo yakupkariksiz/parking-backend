@@ -63,7 +63,7 @@ jobs:
             # 3. Smart Health Check Loop
             echo "Waiting for health check..."
             for i in {1..24}; do
-              if curl -s --fail --max-time 5 http://localhost:8080/actuator/health; then
+              if curl -s --fail --max-time 5 http://localhost:8080/login.html; then
                 echo "Application started successfully!"
                 exit 0
               fi

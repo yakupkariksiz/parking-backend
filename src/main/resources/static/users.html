@@ -269,6 +269,60 @@
 
         .actions { display: flex; gap: 6px; }
 
+        /* Pending requests */
+        .pending-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .pending-card h2 {
+            font-size: 1.1rem;
+            margin: 0 0 16px 0;
+            color: #1e293b;
+        }
+
+        .pending-count {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+        .status-badge.approved { background: #f0fdf4; color: #15803d; }
+        .status-badge.rejected { background: #fef2f2; color: #b91c1c; }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-approve:hover { background: #059669; }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-reject:hover { background: #dc2626; }
+
+        .role-select-small {
+            padding: 5px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: #f9fafb;
+        }
+
         /* Edit modal overlay */
         .modal-overlay {
             display: none;
@@ -342,6 +396,12 @@
     <h1>&#128100; User Management</h1>
 
     <div id="msg" class="message"></div>
+
+    <!-- Pending Registration Requests -->
+    <div class="pending-card" id="pendingSection" style="display:none;">
+        <h2>Pending Registration Requests <span class="pending-count" id="pendingCount">0</span></h2>
+        <div id="pendingContainer">Loading...</div>
+    </div>
 
     <!-- Add User Form -->
     <div class="add-user-card">
@@ -661,6 +721,133 @@
         }
     }
 
+    // --- Pending Registration Requests ---
+    const pendingSection = document.getElementById('pendingSection');
+    const pendingContainer = document.getElementById('pendingContainer');
+    const pendingCountEl = document.getElementById('pendingCount');
+
+    async function loadPendingRequests() {
+        try {
+            const res = await fetch('/api/admin/registrations', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
+            if (!res.ok) {
+                pendingContainer.textContent = 'Error loading requests';
+                return;
+            }
+            const requests = await res.json();
+            const pending = requests.filter(r => r.status === 'PENDING');
+
+            if (requests.length === 0) {
+                pendingSection.style.display = 'none';
+                return;
+            }
+
+            pendingSection.style.display = 'block';
+            pendingCountEl.textContent = pending.length;
+            renderPendingRequests(requests);
+        } catch (err) {
+            console.warn('Failed to load pending requests', err);
+        }
+    }
+
+    function renderPendingRequests(requests) {
+        if (requests.length === 0) {
+            pendingContainer.textContent = 'No registration requests.';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Requested</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+        `;
+
+        const tbody = document.createElement('tbody');
+        requests.forEach(r => {
+            const tr = document.createElement('tr');
+            const statusClass = r.status.toLowerCase();
+            const date = new Date(r.createdAt).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+
+            let actionsHtml = '';
+            if (r.status === 'PENDING') {
+                actionsHtml = `
+                    <select class="role-select-small" id="role-${r.id}">
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                    <button class="btn btn-approve" onclick="approveRequest(${r.id})">Approve</button>
+                    <button class="btn btn-reject" onclick="rejectRequest(${r.id})">Reject</button>
+                `;
+            } else if (r.status === 'APPROVED') {
+                const roleName = r.approvedRole === 'ROLE_ADMIN' ? 'Admin' : 'User';
+                actionsHtml = `<span style="font-size:0.8rem;color:#64748b;">Approved as ${roleName}</span>`;
+            } else {
+                actionsHtml = `<span style="font-size:0.8rem;color:#64748b;">-</span>`;
+            }
+
+            tr.innerHTML = `
+                <td><strong>${r.email}</strong></td>
+                <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+                <td style="font-size:0.85rem;color:#64748b;">${date}</td>
+                <td class="actions">${actionsHtml}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+
+        pendingContainer.innerHTML = '';
+        pendingContainer.appendChild(table);
+    }
+
+    async function approveRequest(id) {
+        const role = document.getElementById('role-' + id).value;
+        try {
+            const res = await fetch(`/api/admin/registrations/${id}/approve`, {
+                method: 'PUT',
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ role })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMessage('Registration approved and email sent', 'success');
+                await loadPendingRequests();
+            } else {
+                showMessage(data.error || 'Failed to approve', 'error');
+            }
+        } catch (err) {
+            showMessage('Network error: ' + err.message, 'error');
+        }
+    }
+
+    async function rejectRequest(id) {
+        if (!confirm('Reject this registration request?')) return;
+        try {
+            const res = await fetch(`/api/admin/registrations/${id}/reject`, {
+                method: 'PUT',
+                headers: getAuthHeaders()
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMessage('Registration rejected', 'success');
+                await loadPendingRequests();
+            } else {
+                showMessage(data.error || 'Failed to reject', 'error');
+            }
+        } catch (err) {
+            showMessage('Network error: ' + err.message, 'error');
+        }
+    }
+
+    loadPendingRequests();
     loadUsers();
 </script>
 

@@ -39,7 +39,7 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          envs: DB_PASSWORD,JWT_SECRET
+          envs: DB_PASSWORD,JWT_SECRET,GMAIL_USERNAME,GMAIL_APP_PASSWORD
           command_timeout: 15m  # Increased from 5m to prevent premature timeouts
           script: |
             cd /home/ubuntu/parking-backend
@@ -57,6 +57,9 @@ jobs:
               --spring.datasource.username=parking_user \
               --spring.datasource.password="$DB_PASSWORD" \
               --jwt.secret="$JWT_SECRET" \
+              --spring.mail.username="$GMAIL_USERNAME" \
+              --spring.mail.password="$GMAIL_APP_PASSWORD" \
+              --app.base-url="http://52.58.182.168:8080" \
               --server.port=8080 \
               > app.log 2>&1 < /dev/null &
             
@@ -78,5 +81,7 @@ jobs:
         env:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
 

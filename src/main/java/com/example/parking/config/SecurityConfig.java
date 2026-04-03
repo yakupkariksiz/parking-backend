@@ -45,8 +45,12 @@ public class SecurityConfig {
                                 "/stats.html",
                                 "/occupancy.html",
                                 "/users.html",
+                                "/set-password.html",
                                 "/css/**", "/js/**",
                                 "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/validate-token",
+                                "/api/auth/set-password",
                                 "/actuator/health"
                         ).permitAll()
 

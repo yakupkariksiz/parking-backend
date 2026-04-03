@@ -117,6 +117,23 @@
             color: #15803d;
             background: #f0fdf4;
         }
+        .toggle-link {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        .toggle-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .toggle-link a:hover {
+            text-decoration: underline;
+        }
+        .hidden {
+            display: none;
+        }
         .footer {
             margin-top: 32px;
             font-size: 0.8rem;
@@ -144,6 +161,23 @@
         <button type="submit" class="login-btn" id="loginBtn">Sign In</button>
     </form>
 
+    <div class="toggle-link" id="showSignup">
+        Don't have an account? <a onclick="toggleForms('signup')">Sign Up</a>
+    </div>
+
+    <!-- Sign Up Form (hidden by default) -->
+    <form id="signupForm" class="hidden">
+        <div class="form-group">
+            <label for="signupEmail">Email Address</label>
+            <input type="email" id="signupEmail" placeholder="your.email@example.com" required>
+        </div>
+        <button type="submit" class="login-btn" id="signupBtn" style="background: #10b981;">Request Access</button>
+    </form>
+
+    <div class="toggle-link hidden" id="showLogin">
+        Already have an account? <a onclick="toggleForms('login')">Sign In</a>
+    </div>
+
     <div id="msg" class="message" style="display:none;"></div>
 
     <div class="footer">
@@ -170,6 +204,26 @@
         window.location.href = '/dashboard.html';
     }
 
+    // Toggle between login and signup forms
+    function toggleForms(mode) {
+        msgEl.style.display = 'none';
+        msgEl.className = 'message';
+        if (mode === 'signup') {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('showSignup').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+            document.getElementById('showLogin').classList.remove('hidden');
+            document.querySelector('.subtitle').textContent = 'Request access to the parking system';
+        } else {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('showSignup').classList.remove('hidden');
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('showLogin').classList.add('hidden');
+            document.querySelector('.subtitle').textContent = 'Sign in to manage parking and scan plates';
+        }
+    }
+
+    // Login form handler
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         msgEl.style.display = 'none';
@@ -209,6 +263,49 @@
         } finally {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Sign In';
+        }
+    });
+
+    // Signup form handler
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msgEl.style.display = 'none';
+
+        const signupBtn = document.getElementById('signupBtn');
+        signupBtn.disabled = true;
+        signupBtn.textContent = 'Submitting...';
+
+        const email = document.getElementById('signupEmail').value.trim();
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                msgEl.textContent = data.message || 'Request submitted! An administrator will review your request.';
+                msgEl.classList.remove('error');
+                msgEl.classList.add('info');
+                msgEl.style.display = 'block';
+                document.getElementById('signupForm').reset();
+            } else {
+                msgEl.textContent = data.error || 'Failed to submit request.';
+                msgEl.classList.remove('info');
+                msgEl.classList.add('error');
+                msgEl.style.display = 'block';
+            }
+        } catch (err) {
+            msgEl.textContent = 'Connection error. Please try again.';
+            msgEl.classList.remove('info');
+            msgEl.classList.add('error');
+            msgEl.style.display = 'block';
+        } finally {
+            signupBtn.disabled = false;
+            signupBtn.textContent = 'Request Access';
         }
     });
 </script>

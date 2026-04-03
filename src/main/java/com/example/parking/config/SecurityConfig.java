@@ -46,7 +46,8 @@ public class SecurityConfig {
                                 "/occupancy.html",
                                 "/users.html",
                                 "/css/**", "/js/**",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/actuator/health"
                         ).permitAll()
 
                         // Admin-only API endpoints

@@ -34,34 +34,25 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers(
-                                "/api/auth/login",
-                                "/login.html",
-                                "/css/**", "/js/**"
-                        ).permitAll()
-
-                        // Admin-only endpoints
-                        .requestMatchers("/admin/**", "/api/admin/**").hasAuthority("ROLE_ADMIN")
-
-                        // All authenticated users
+                        // Public: static pages and login API
+                        // (frontend JS handles auth checks and redirects to login)
                         .requestMatchers(
                                 "/",
+                                "/login.html",
                                 "/dashboard.html",
                                 "/index.html",
                                 "/residents.html",
                                 "/stats.html",
                                 "/occupancy.html",
                                 "/users.html",
-                                "/api/user/**",
-                                "/residents/**",
-                                "/stats/**",
-                                "/locations/**",
-                                "/plates/**",
-                                "/scan-entries/**",
-                                "/scan-sessions/**"
-                        ).authenticated()
+                                "/css/**", "/js/**",
+                                "/api/auth/login"
+                        ).permitAll()
 
+                        // Admin-only API endpoints
+                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+
+                        // All other requests (API endpoints) require authentication
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

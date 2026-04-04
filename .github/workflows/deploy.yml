@@ -59,7 +59,7 @@ jobs:
               --jwt.secret="$JWT_SECRET" \
               --spring.mail.username="$GMAIL_USERNAME" \
               --spring.mail.password="$GMAIL_APP_PASSWORD" \
-              --app.base-url="http://52.58.182.168:8080" \
+              --app.base-url="https://52.58.182.168" \
               --server.port=8080 \
               > app.log 2>&1 < /dev/null &
             

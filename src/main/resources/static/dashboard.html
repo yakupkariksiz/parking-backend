@@ -205,6 +205,10 @@
             border-left: 4px solid #ea580c;
         }
 
+        .menu-card.users {
+            border-left: 4px solid #0891b2;
+        }
+
         /* Admin only badge */
         .admin-badge {
             background: #fef3c7;
@@ -334,6 +338,14 @@
             <div class="icon">📈</div>
             <h2>Occupancy Chart</h2>
             <p>Visualize parking usage: Residents vs Non-Residents over time.</p>
+            <span class="admin-badge">Admin Only</span>
+        </a>
+
+        <!-- User Management - admin only -->
+        <a href="/users.html" class="menu-card users admin-only" id="users-card">
+            <div class="icon">👤</div>
+            <h2>User Management</h2>
+            <p>Manage users, roles, and approve registration requests.</p>
             <span class="admin-badge">Admin Only</span>
         </a>
 

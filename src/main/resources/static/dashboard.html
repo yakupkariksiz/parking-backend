@@ -363,6 +363,10 @@
                 <div class="value" id="total-scans">-</div>
                 <div class="label">Total Scans</div>
             </div>
+            <div class="stat-item">
+                <div class="value" id="total-vehicles">-</div>
+                <div class="label">Resident Cars</div>
+            </div>
         </div>
     </div>
 </div>
@@ -455,6 +459,13 @@
                 let totalScans = 0;
                 sessions.forEach(s => totalScans += (s.scanCount || 0));
                 document.getElementById('total-scans').textContent = totalScans;
+            }
+
+            // Load resident cars count
+            const platesRes = await fetch('/plates/known', { headers: getAuthHeaders() });
+            if (platesRes.ok) {
+                const plates = await platesRes.json();
+                document.getElementById('total-vehicles').textContent = plates.residents ? plates.residents.length : 0;
             }
         } catch (err) {
             console.warn('Failed to load quick stats', err);

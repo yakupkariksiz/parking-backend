@@ -367,6 +367,10 @@
                 <div class="value" id="total-vehicles">-</div>
                 <div class="label">Resident Cars</div>
             </div>
+            <div class="stat-item">
+                <div class="value" id="avg-cars">-</div>
+                <div class="label">Avg Cars / House</div>
+            </div>
         </div>
     </div>
 </div>
@@ -442,11 +446,21 @@
     // Load quick stats
     async function loadQuickStats() {
         try {
-            // Load residents count
+            // Load residents count and avg cars per house
             const residentsRes = await fetch('/residents', { headers: getAuthHeaders() });
             if (residentsRes.ok) {
                 const residents = await residentsRes.json();
                 document.getElementById('total-residents').textContent = residents.length || 0;
+
+                // Calculate average cars per house
+                if (residents.length > 0) {
+                    let totalCars = 0;
+                    residents.forEach(r => totalCars += (r.licensePlates ? r.licensePlates.length : 0));
+                    const avg = (totalCars / residents.length).toFixed(1);
+                    document.getElementById('avg-cars').textContent = avg;
+                } else {
+                    document.getElementById('avg-cars').textContent = '0';
+                }
             }
 
             // Load sessions count

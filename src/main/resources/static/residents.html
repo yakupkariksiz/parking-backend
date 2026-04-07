@@ -440,6 +440,12 @@
     }
     if (!getToken()) { window.location.href = '/login.html'; }
 
+    // Admin-only page: redirect non-admins to dashboard
+    const storedRole = localStorage.getItem('jwt_role');
+    if (storedRole && storedRole !== 'ROLE_ADMIN') {
+        window.location.href = '/dashboard.html';
+    }
+
     // Dropdown menu toggle
     const navDropdownBtn = document.getElementById('nav-dropdown-btn');
     const navDropdownContent = document.getElementById('nav-dropdown-content');
@@ -466,6 +472,12 @@
                 if (user.authenticated) {
                     userNameEl.textContent = user.name || 'User';
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Server-side role check: redirect non-admins
+                    if (user.role !== 'ROLE_ADMIN') {
+                        window.location.href = '/dashboard.html';
+                        return;
+                    }
                 }
             }
         } catch (err) {

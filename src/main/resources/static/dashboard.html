@@ -266,6 +266,15 @@
         .admin-only.visible {
             display: flex;
         }
+
+        /* Hide admin-only nav links by default */
+        .admin-only-nav {
+            display: none !important;
+        }
+
+        .admin-only-nav.visible {
+            display: flex !important;
+        }
     </style>
 </head>
 <body>
@@ -282,11 +291,11 @@
                 <a href="/dashboard.html" class="active"><span class="menu-icon">🏠</span> Dashboard</a>
                 <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
                 <div class="divider"></div>
-                <a href="/residents.html"><span class="menu-icon">👥</span> Residents</a>
+                <a href="/residents.html" class="admin-only-nav"><span class="menu-icon">👥</span> Residents <span class="admin-badge-menu">Admin</span></a>
                 <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
                 <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
-                <a href="/users.html" class="admin-only-link"><span class="menu-icon">👤</span> User Management <span class="admin-badge-menu">Admin</span></a>
+                <a href="/users.html" class="admin-only-nav"><span class="menu-icon">👤</span> User Management <span class="admin-badge-menu">Admin</span></a>
                 <div class="divider"></div>
                 <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
@@ -416,7 +425,7 @@
 
     // Admin-only elements
     const adminOnlyElements = document.querySelectorAll('.admin-only');
-    const adminOnlyLinks = document.querySelectorAll('.admin-only-link');
+    const adminOnlyNavLinks = document.querySelectorAll('.admin-only-nav');
 
     // Fetch and display current user
     async function loadCurrentUser() {
@@ -432,6 +441,7 @@
                     // Show admin-only elements
                     if (user.role === 'ROLE_ADMIN') {
                         adminOnlyElements.forEach(el => el.classList.add('visible'));
+                        adminOnlyNavLinks.forEach(el => el.classList.add('visible'));
                     }
 
                     // Load quick stats for all authenticated users

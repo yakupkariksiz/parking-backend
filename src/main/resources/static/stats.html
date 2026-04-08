@@ -92,6 +92,15 @@
             margin-left: auto;
         }
 
+        /* Hide admin-only nav links by default */
+        .admin-only-nav {
+            display: none !important;
+        }
+
+        .admin-only-nav.visible {
+            display: flex !important;
+        }
+
         .user-info {
             display: flex;
             align-items: center;
@@ -228,9 +237,11 @@
                 <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
                 <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
                 <div class="divider"></div>
-                <a href="/residents.html"><span class="menu-icon">👥</span> Residents</a>
+                <a href="/residents.html" class="admin-only-nav"><span class="menu-icon">👥</span> Residents <span class="admin-badge">Admin</span></a>
                 <a href="/stats.html" class="active"><span class="menu-icon">📊</span> Session Stats</a>
                 <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
+                <div class="divider"></div>
+                <a href="/users.html" class="admin-only-nav"><span class="menu-icon">👤</span> User Management <span class="admin-badge">Admin</span></a>
                 <div class="divider"></div>
                 <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
@@ -302,8 +313,8 @@
 
     <div class="nav">
         <a href="/dashboard.html">← Dashboard</a> ·
-        <a href="/index.html">Scan Page</a> ·
-        <a href="/residents.html">Manage residents</a>
+        <a href="/index.html">Scan Page</a><span class="admin-only-nav" style="display:none;"> ·
+        <a href="/residents.html">Manage residents</a></span>
     </div>
 </div>
 
@@ -356,6 +367,11 @@
                 if (user.authenticated) {
                     userNameEl.textContent = user.name || 'User';
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Show admin-only nav links
+                    if (user.role === 'ROLE_ADMIN') {
+                        document.querySelectorAll('.admin-only-nav').forEach(el => el.classList.add('visible'));
+                    }
                 }
             }
         } catch (err) {

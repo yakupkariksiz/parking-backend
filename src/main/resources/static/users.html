@@ -534,6 +534,12 @@
                 if (user.authenticated) {
                     userNameEl.textContent = user.name || 'User';
                     userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Server-side role check: redirect non-admins
+                    if (user.role !== 'ROLE_ADMIN') {
+                        window.location.href = '/dashboard.html';
+                        return;
+                    }
                 }
             }
         } catch (err) {

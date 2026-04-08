@@ -356,6 +356,8 @@
                 <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
                 <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
                 <div class="divider"></div>
+                <a href="/users.html"><span class="menu-icon">👤</span> User Management <span class="admin-badge">Admin</span></a>
+                <div class="divider"></div>
                 <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
             </div>
         </div>
@@ -442,7 +444,7 @@
 
     // Admin-only page: redirect non-admins to dashboard
     const storedRole = localStorage.getItem('jwt_role');
-    if (storedRole && storedRole !== 'ROLE_ADMIN') {
+    if (storedRole !== 'ROLE_ADMIN') {
         window.location.href = '/dashboard.html';
     }
 

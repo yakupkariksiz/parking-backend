@@ -46,7 +46,7 @@ public class SecurityConfig {
                                 "/occupancy.html",
                                 "/users.html",
                                 "/set-password.html",
-                                "/css/**", "/js/**",
+                                "/css/**", "/js/**", "/common.css", "/common.js",
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/api/auth/validate-token",

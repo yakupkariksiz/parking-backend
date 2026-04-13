@@ -4,200 +4,489 @@
     <meta charset="UTF-8">
     <title>Dashboard – Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
-                }
-            }
+
+    <style>
+        * {
+            box-sizing: border-box;
         }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/common.css">
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .user-header .app-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .user-header .app-name:hover {
+            color: #94a3b8;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-dropdown-btn:hover { background: #475569; }
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .nav-dropdown-content.show { display: block; }
+        .nav-dropdown-content a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+        .nav-dropdown-content a:hover { background: #f1f5f9; }
+        .nav-dropdown-content a.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
+        .nav-dropdown-content .divider { height: 1px; background: #e2e8f0; margin: 4px 0; }
+        .nav-dropdown-content .menu-icon { width: 18px; text-align: center; }
+        .nav-dropdown-content .admin-badge-menu {
+            font-size: 0.65rem;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-info img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+        }
+
+        .user-info .user-details {
+            text-align: right;
+        }
+
+        .user-info .user-name {
+            font-weight: 500;
+        }
+
+        .user-info .user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+
+        /* Main content */
+        .main-content {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .welcome-section h1 {
+            font-size: 2rem;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .welcome-section p {
+            color: #64748b;
+            font-size: 1rem;
+        }
+
+        /* Menu grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .menu-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .menu-card .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .menu-card h2 {
+            font-size: 1.2rem;
+            margin: 0 0 8px 0;
+            color: #1e293b;
+        }
+
+        .menu-card p {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        .menu-card.scanner {
+            border-left: 4px solid #2563eb;
+        }
+
+        .menu-card.residents {
+            border-left: 4px solid #16a34a;
+        }
+
+        .menu-card.stats {
+            border-left: 4px solid #9333ea;
+        }
+
+        .menu-card.users {
+            border-left: 4px solid #0891b2;
+        }
+
+        /* Admin only badge */
+        .admin-badge {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        /* Quick stats section */
+        .quick-stats {
+            margin-top: 40px;
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .quick-stats h3 {
+            margin: 0 0 16px 0;
+            color: #1e293b;
+            font-size: 1.1rem;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .stat-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .stat-item .label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Hide admin-only items for non-admins */
+        .admin-only {
+            display: none;
+        }
+
+        .admin-only.visible {
+            display: flex;
+        }
+
+        /* Hide admin-only nav links by default */
+        .admin-only-nav {
+            display: none !important;
+        }
+
+        .admin-only-nav.visible {
+            display: flex !important;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+<body>
 
-<script src="/common.js"></script>
-<script>
-    requireAuth();
-    renderNavDrawer('dashboard');
-</script>
+<!-- User header bar -->
+<div class="user-header">
+    <a href="/dashboard.html" class="app-name">🚗 Parking Scanner</a>
+    <div class="header-right">
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
+                <span>☰</span> Menu
+            </button>
+            <div class="nav-dropdown-content" id="nav-dropdown-content">
+                <a href="/dashboard.html" class="active"><span class="menu-icon">🏠</span> Dashboard</a>
+                <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
+                <div class="divider"></div>
+                <a href="/residents.html" class="admin-only-nav"><span class="menu-icon">👥</span> Residents <span class="admin-badge-menu">Admin</span></a>
+                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
+                <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
+                <div class="divider"></div>
+                <a href="/users.html" class="admin-only-nav"><span class="menu-icon">👤</span> User Management <span class="admin-badge-menu">Admin</span></a>
+                <div class="divider"></div>
+                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
+            </div>
+        </div>
+        <div class="user-info">
+            <div class="user-details">
+                <div class="user-name" id="user-name">Loading...</div>
+                <div class="user-role" id="user-role"></div>
+            </div>
+            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        </div>
+    </div>
+</div>
 
-<!-- Main content -->
-<main class="max-w-5xl mx-auto px-4 sm:px-6 pt-10 pb-16 page-fade-in">
-
-    <!-- Welcome section -->
-    <div class="text-center mb-10">
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-800">Welcome back!</h1>
-        <p class="text-slate-500 mt-2 text-sm sm:text-base">Select an option below to get started.</p>
+<div class="main-content">
+    <div class="welcome-section">
+        <h1>Welcome back!</h1>
+        <p>Select an option below to get started.</p>
     </div>
 
-    <!-- Card grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
-        <!-- Scan Plates -->
-        <a href="/index.html" class="group card-hover bg-white rounded-xl border border-slate-200/80 p-6 flex flex-col items-start gap-4 relative overflow-hidden no-underline">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 rounded-l-xl"></div>
-            <div class="w-11 h-11 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-base font-semibold text-slate-800 group-hover:text-indigo-700 transition-colors">Scan Plates</h2>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">Scan license plates during parking patrol sessions.</p>
-            </div>
+    <div class="menu-grid">
+        <!-- Scanner - available to all authenticated users -->
+        <a href="/index.html" class="menu-card scanner">
+            <div class="icon">📷</div>
+            <h2>Scan Plates</h2>
+            <p>Scan license plates during parking patrol sessions.</p>
         </a>
 
-        <!-- Manage Residents (admin only) -->
-        <a href="/residents.html" class="group card-hover bg-white rounded-xl border border-slate-200/80 p-6 flex flex-col items-start gap-4 relative overflow-hidden no-underline admin-only" style="display:none;">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-l-xl"></div>
-            <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-base font-semibold text-slate-800 group-hover:text-emerald-700 transition-colors">Manage Residents</h2>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">Add, edit, or remove residents and their license plates.</p>
-            </div>
-            <span class="badge badge-admin mt-auto">Admin Only</span>
+        <!-- Residents - admin only -->
+        <a href="/residents.html" class="menu-card residents admin-only" id="residents-card">
+            <div class="icon">👥</div>
+            <h2>Manage Residents</h2>
+            <p>Add, edit, or remove residents and their license plates.</p>
+            <span class="admin-badge">Admin Only</span>
         </a>
 
-        <!-- Session Statistics -->
-        <a href="/stats.html" class="group card-hover bg-white rounded-xl border border-slate-200/80 p-6 flex flex-col items-start gap-4 relative overflow-hidden no-underline">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-violet-500 rounded-l-xl"></div>
-            <div class="w-11 h-11 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-base font-semibold text-slate-800 group-hover:text-violet-700 transition-colors">Session Statistics</h2>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">See scan session stats and resident/outsider breakdowns.</p>
-            </div>
+        <!-- Stats -->
+        <a href="/stats.html" class="menu-card stats" id="stats-card">
+            <div class="icon">📊</div>
+            <h2>Session Statistics</h2>
+            <p>See scan session stats and resident/outsider breakdowns.</p>
         </a>
 
         <!-- Occupancy Chart -->
-        <a href="/occupancy.html" class="group card-hover bg-white rounded-xl border border-slate-200/80 p-6 flex flex-col items-start gap-4 relative overflow-hidden no-underline">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-cyan-500 rounded-l-xl"></div>
-            <div class="w-11 h-11 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-base font-semibold text-slate-800 group-hover:text-cyan-700 transition-colors">Occupancy Chart</h2>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">Visualize parking usage: Residents vs Non-Residents over time.</p>
-            </div>
+        <a href="/occupancy.html" class="menu-card stats" id="occupancy-card">
+            <div class="icon">📈</div>
+            <h2>Occupancy Chart</h2>
+            <p>Visualize parking usage: Residents vs Non-Residents over time.</p>
         </a>
 
-        <!-- User Management (admin only) -->
-        <a href="/users.html" class="group card-hover bg-white rounded-xl border border-slate-200/80 p-6 flex flex-col items-start gap-4 relative overflow-hidden no-underline admin-only" style="display:none;">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500 rounded-l-xl"></div>
-            <div class="w-11 h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-            </div>
-            <div>
-                <h2 class="text-base font-semibold text-slate-800 group-hover:text-amber-700 transition-colors">User Management</h2>
-                <p class="text-sm text-slate-500 mt-1 leading-relaxed">Manage users, roles, and approve registration requests.</p>
-            </div>
-            <span class="badge badge-admin mt-auto">Admin Only</span>
+        <!-- User Management - admin only -->
+        <a href="/users.html" class="menu-card users admin-only" id="users-card">
+            <div class="icon">👤</div>
+            <h2>User Management</h2>
+            <p>Manage users, roles, and approve registration requests.</p>
+            <span class="admin-badge">Admin Only</span>
         </a>
 
     </div>
 
-    <!-- Quick Overview (admin only) -->
-    <div class="mt-10 bg-white rounded-xl border border-slate-200/80 p-6 admin-only" id="quick-stats" style="display:none;">
-        <h3 class="text-base font-semibold text-slate-800 mb-5 flex items-center gap-2">
-            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-            </svg>
-            Quick Overview
-        </h3>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" id="stats-grid">
-            <!-- Residents -->
-            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-indigo-600" id="total-residents">
-                    <div class="skeleton h-8 w-12 mx-auto"></div>
-                </div>
-                <div class="text-xs text-slate-500 mt-1.5 font-medium">Residents</div>
+    <!-- Quick stats section -->
+    <div class="quick-stats admin-only" id="quick-stats">
+        <h3>📈 Quick Overview</h3>
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="value" id="total-residents">-</div>
+                <div class="label">Residents</div>
             </div>
-            <!-- Scan Sessions -->
-            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-indigo-600" id="total-sessions">
-                    <div class="skeleton h-8 w-12 mx-auto"></div>
-                </div>
-                <div class="text-xs text-slate-500 mt-1.5 font-medium">Scan Sessions</div>
+            <div class="stat-item">
+                <div class="value" id="total-sessions">-</div>
+                <div class="label">Scan Sessions</div>
             </div>
-            <!-- Total Scans -->
-            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-indigo-600" id="total-scans">
-                    <div class="skeleton h-8 w-12 mx-auto"></div>
-                </div>
-                <div class="text-xs text-slate-500 mt-1.5 font-medium">Total Scans</div>
+            <div class="stat-item">
+                <div class="value" id="total-scans">-</div>
+                <div class="label">Total Scans</div>
             </div>
-            <!-- Resident Cars -->
-            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-indigo-600" id="total-vehicles">
-                    <div class="skeleton h-8 w-12 mx-auto"></div>
-                </div>
-                <div class="text-xs text-slate-500 mt-1.5 font-medium">Resident Cars</div>
+            <div class="stat-item">
+                <div class="value" id="total-vehicles">-</div>
+                <div class="label">Resident Cars</div>
             </div>
-            <!-- Avg Cars / House -->
-            <div class="bg-slate-50 rounded-lg p-4 text-center">
-                <div class="text-2xl font-bold text-indigo-600" id="avg-cars">
-                    <div class="skeleton h-8 w-12 mx-auto"></div>
-                </div>
-                <div class="text-xs text-slate-500 mt-1.5 font-medium">Avg Cars / House</div>
+            <div class="stat-item">
+                <div class="value" id="avg-cars">-</div>
+                <div class="label">Avg Cars / House</div>
             </div>
         </div>
     </div>
-
-</main>
+</div>
 
 <script>
-    // Load user and then quick stats for admins
-    loadCurrentUser({
-        onAdmin: () => loadQuickStats()
+    // --- JWT Auth Helpers ---
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getAuthHeaders(extra) {
+        const headers = { 'Authorization': 'Bearer ' + getToken() };
+        if (extra) Object.assign(headers, extra);
+        return headers;
+    }
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('jwt_username');
+        localStorage.removeItem('jwt_role');
+        window.location.href = '/login.html?logout';
+    }
+    function checkAuth(res) {
+        if (res.status === 401 || res.status === 403) {
+            logout();
+            return false;
+        }
+        return true;
+    }
+    if (!getToken()) { window.location.href = '/login.html'; }
+
+    // Dropdown menu toggle
+    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
+    const navDropdownContent = document.getElementById('nav-dropdown-content');
+    navDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navDropdownContent.classList.toggle('show');
+    });
+    document.addEventListener('click', () => {
+        navDropdownContent.classList.remove('show');
     });
 
+    // User info elements
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+    const userAvatarEl = document.getElementById('user-avatar');
+
+    // Admin-only elements
+    const adminOnlyElements = document.querySelectorAll('.admin-only');
+    const adminOnlyNavLinks = document.querySelectorAll('.admin-only-nav');
+
+    // Fetch and display current user
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Show admin-only elements
+                    if (user.role === 'ROLE_ADMIN') {
+                        adminOnlyElements.forEach(el => el.classList.add('visible'));
+                        adminOnlyNavLinks.forEach(el => el.classList.add('visible'));
+                    }
+
+                    // Load quick stats for all authenticated users
+                    loadQuickStats();
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
+
+    // Load quick stats
     async function loadQuickStats() {
         try {
-            // Fetch all three in parallel
-            const [residentsRes, sessionsRes, platesRes] = await Promise.all([
-                fetch('/residents', { headers: getAuthHeaders() }),
-                fetch('/scan-sessions', { headers: getAuthHeaders() }),
-                fetch('/plates/known', { headers: getAuthHeaders() })
-            ]);
-
+            // Load residents count and avg cars per house
+            const residentsRes = await fetch('/residents', { headers: getAuthHeaders() });
             if (residentsRes.ok) {
                 const residents = await residentsRes.json();
                 document.getElementById('total-residents').textContent = residents.length || 0;
 
+                // Calculate average cars per house
                 if (residents.length > 0) {
                     let totalCars = 0;
                     residents.forEach(r => totalCars += (r.licensePlates ? r.licensePlates.length : 0));
-                    document.getElementById('avg-cars').textContent = (totalCars / residents.length).toFixed(1);
+                    const avg = (totalCars / residents.length).toFixed(1);
+                    document.getElementById('avg-cars').textContent = avg;
                 } else {
                     document.getElementById('avg-cars').textContent = '0';
                 }
             }
 
+            // Load sessions count
+            const sessionsRes = await fetch('/scan-sessions', { headers: getAuthHeaders() });
             if (sessionsRes.ok) {
                 const sessions = await sessionsRes.json();
                 document.getElementById('total-sessions').textContent = sessions.length || 0;
 
+                // Calculate total scans from sessions
                 let totalScans = 0;
                 sessions.forEach(s => totalScans += (s.scanCount || 0));
                 document.getElementById('total-scans').textContent = totalScans;
             }
 
+            // Load resident cars count
+            const platesRes = await fetch('/plates/known', { headers: getAuthHeaders() });
             if (platesRes.ok) {
                 const plates = await platesRes.json();
                 document.getElementById('total-vehicles').textContent = plates.residents ? plates.residents.length : 0;
@@ -206,7 +495,10 @@
             console.warn('Failed to load quick stats', err);
         }
     }
+
+    loadCurrentUser();
 </script>
 
 </body>
 </html>
+

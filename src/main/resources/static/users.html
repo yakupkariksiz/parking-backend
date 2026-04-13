@@ -4,173 +4,583 @@
     <meta charset="UTF-8">
     <title>User Management – Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
-                }
-            }
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
         }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/common.css">
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        .user-header .app-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-decoration: none;
+            color: white;
+        }
+        .user-header .app-name:hover { color: #94a3b8; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .nav-dropdown-btn:hover { background: #475569; }
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 100;
+            overflow: hidden;
+        }
+        .nav-dropdown-content.show { display: block; }
+        .nav-dropdown-content a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+        .nav-dropdown-content a:hover { background: #f1f5f9; }
+        .nav-dropdown-content a.active { background: #eff6ff; color: #2563eb; font-weight: 500; }
+        .nav-dropdown-content .divider { height: 1px; background: #e2e8f0; margin: 4px 0; }
+        .nav-dropdown-content .menu-icon { width: 18px; text-align: center; }
+        .nav-dropdown-content .admin-badge-menu {
+            font-size: 0.65rem;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-info img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+        }
+        .user-info .user-details { text-align: right; }
+        .user-info .user-name { font-weight: 500; }
+        .user-info .user-role { font-size: 0.75rem; color: #94a3b8; }
+
+        /* Main content */
+        .main-content {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            color: #1e293b;
+            margin-bottom: 24px;
+        }
+
+        /* Add user form */
+        .add-user-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+
+        .add-user-card h2 {
+            font-size: 1.1rem;
+            margin: 0 0 16px 0;
+            color: #1e293b;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: #f9fafb;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            background: white;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-danger:hover { background: #dc2626; }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-secondary:hover { background: #d1d5db; }
+
+        /* Message */
+        .message {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .message.success { display: block; background: #f0fdf4; color: #15803d; }
+        .message.error { display: block; background: #fef2f2; color: #b91c1c; }
+
+        /* Users table */
+        .users-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .users-card h2 {
+            font-size: 1.1rem;
+            margin: 0 0 16px 0;
+            color: #1e293b;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        tr:hover { background: #f8fafc; }
+
+        .role-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .role-badge.admin { background: #fef3c7; color: #92400e; }
+        .role-badge.user { background: #e0e7ff; color: #3730a3; }
+
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-badge.enabled { background: #f0fdf4; color: #15803d; }
+        .status-badge.disabled { background: #fef2f2; color: #b91c1c; }
+
+        .actions { display: flex; gap: 6px; }
+
+        /* Pending requests */
+        .pending-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .pending-card h2 {
+            font-size: 1.1rem;
+            margin: 0 0 16px 0;
+            color: #1e293b;
+        }
+
+        .pending-count {
+            background: #fef3c7;
+            color: #92400e;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .status-badge.pending { background: #fef3c7; color: #92400e; }
+        .status-badge.approved { background: #f0fdf4; color: #15803d; }
+        .status-badge.rejected { background: #fef2f2; color: #b91c1c; }
+
+        .btn-approve {
+            background: #10b981;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-approve:hover { background: #059669; }
+
+        .btn-reject {
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-reject:hover { background: #dc2626; }
+
+        .role-select-small {
+            padding: 5px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background: #f9fafb;
+        }
+
+        /* Edit modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .modal h3 {
+            margin: 0 0 20px 0;
+            font-size: 1.1rem;
+            color: #1e293b;
+        }
+        .modal .form-group { margin-bottom: 14px; }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+<body>
 
-<script src="/common.js"></script>
-<script>
-    requireAuth();
-    requireAdmin();
-    renderNavDrawer('users');
-</script>
+<!-- Header -->
+<div class="user-header">
+    <a href="/dashboard.html" class="app-name">&#128663; Parking Scanner</a>
+    <div class="header-right">
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
+                <span>&#9776;</span> Menu
+            </button>
+            <div class="nav-dropdown-content" id="nav-dropdown-content">
+                <a href="/dashboard.html"><span class="menu-icon">&#127968;</span> Dashboard</a>
+                <a href="/index.html"><span class="menu-icon">&#128247;</span> Scan Plates</a>
+                <div class="divider"></div>
+                <a href="/residents.html"><span class="menu-icon">&#128101;</span> Residents</a>
+                <a href="/stats.html"><span class="menu-icon">&#128202;</span> Session Stats</a>
+                <a href="/occupancy.html"><span class="menu-icon">&#128200;</span> Occupancy Chart</a>
+                <div class="divider"></div>
+                <a href="/users.html" class="active"><span class="menu-icon">&#128100;</span> User Management <span class="admin-badge-menu">Admin</span></a>
+                <div class="divider"></div>
+                <a href="#" onclick="logout(); return false;"><span class="menu-icon">&#128682;</span> Logout</a>
+            </div>
+        </div>
+        <div class="user-info">
+            <div class="user-details">
+                <div class="user-name" id="user-name">Loading...</div>
+                <div class="user-role" id="user-role"></div>
+            </div>
+            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        </div>
+    </div>
+</div>
 
-<!-- Edit User Modal -->
-<div class="modal-overlay" id="editModal">
-    <div class="modal-panel">
-        <h3 class="text-lg font-semibold text-slate-800 mb-5">Edit User</h3>
-        <form id="editUserForm" class="space-y-3.5">
-            <input type="hidden" id="editId">
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-1">Username</label>
-                <input type="text" id="editUsername" disabled class="form-input bg-slate-100 text-slate-500 cursor-not-allowed">
+<div class="main-content">
+    <h1>&#128100; User Management</h1>
+
+    <div id="msg" class="message"></div>
+
+    <!-- Pending Registration Requests -->
+    <div class="pending-card" id="pendingSection" style="display:none;">
+        <h2>Pending Registration Requests <span class="pending-count" id="pendingCount">0</span></h2>
+        <div id="pendingContainer">Loading...</div>
+    </div>
+
+    <!-- Add User Form -->
+    <div class="add-user-card">
+        <h2>Add New User</h2>
+        <form id="addUserForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newUsername">Username</label>
+                    <input type="text" id="newUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Password</label>
+                    <input type="password" id="newPassword" required>
+                </div>
             </div>
-            <div>
-                <label for="editEmail" class="block text-xs font-semibold text-slate-500 mb-1">Email</label>
-                <input type="email" id="editEmail" class="form-input">
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label for="editRole" class="block text-xs font-semibold text-slate-500 mb-1">Role</label>
-                    <select id="editRole" class="form-select">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newEmail">Email (optional)</label>
+                    <input type="email" id="newEmail">
+                </div>
+                <div class="form-group">
+                    <label for="newRole">Role</label>
+                    <select id="newRole">
                         <option value="ROLE_USER">User</option>
                         <option value="ROLE_ADMIN">Admin</option>
                     </select>
                 </div>
-                <div>
-                    <label for="editEnabled" class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
-                    <select id="editEnabled" class="form-select">
-                        <option value="true">Enabled</option>
-                        <option value="false">Disabled</option>
-                    </select>
-                </div>
             </div>
-            <div>
-                <label for="editPassword" class="block text-xs font-semibold text-slate-500 mb-1">New Password <span class="text-slate-400 font-normal">(blank = keep current)</span></label>
-                <input type="password" id="editPassword" class="form-input" placeholder="Leave blank to keep">
+            <button type="submit" class="btn btn-primary" id="addBtn">Add User</button>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-card">
+        <h2>All Users</h2>
+        <div id="usersContainer">Loading...</div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <h3>Edit User</h3>
+        <form id="editUserForm">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="editUsername" disabled>
             </div>
-            <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" class="btn-secondary btn-press" onclick="closeEditModal()">Cancel</button>
-                <button type="submit" class="btn-primary btn-press">Save Changes</button>
+            <div class="form-group">
+                <label for="editEmail">Email</label>
+                <input type="email" id="editEmail">
+            </div>
+            <div class="form-group">
+                <label for="editRole">Role</label>
+                <select id="editRole">
+                    <option value="ROLE_USER">User</option>
+                    <option value="ROLE_ADMIN">Admin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="editPassword">New Password (leave blank to keep current)</label>
+                <input type="password" id="editPassword">
+            </div>
+            <div class="form-group">
+                <label for="editEnabled">Status</label>
+                <select id="editEnabled">
+                    <option value="true">Enabled</option>
+                    <option value="false">Disabled</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Main content -->
-<main class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16 page-fade-in">
-
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold text-slate-800">User Management</h1>
-    </div>
-
-    <!-- Pending Registration Requests -->
-    <div id="pendingSection" class="bg-white rounded-xl border border-amber-200 overflow-hidden mb-6 hidden">
-        <div class="px-5 sm:px-6 py-4 border-b border-amber-100 bg-amber-50/50 flex items-center gap-3">
-            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <h2 class="text-base font-semibold text-slate-800">Pending Registration Requests</h2>
-            <span class="badge badge-pending" id="pendingCount">0</span>
-        </div>
-        <div id="pendingContainer" class="p-5 sm:p-6">
-            <div class="text-sm text-slate-400 text-center py-4">Loading...</div>
-        </div>
-    </div>
-
-    <!-- Add User Form -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6 mb-6">
-        <h2 class="text-base font-semibold text-slate-800 mb-4">Add New User</h2>
-        <form id="addUserForm" class="space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label for="newUsername" class="block text-xs font-semibold text-slate-500 mb-1">Username</label>
-                    <input type="text" id="newUsername" required class="form-input">
-                </div>
-                <div>
-                    <label for="newPassword" class="block text-xs font-semibold text-slate-500 mb-1">Password</label>
-                    <input type="password" id="newPassword" required class="form-input">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label for="newEmail" class="block text-xs font-semibold text-slate-500 mb-1">Email <span class="text-slate-400 font-normal">(optional)</span></label>
-                    <input type="email" id="newEmail" class="form-input">
-                </div>
-                <div>
-                    <label for="newRole" class="block text-xs font-semibold text-slate-500 mb-1">Role</label>
-                    <select id="newRole" class="form-select">
-                        <option value="ROLE_USER">User</option>
-                        <option value="ROLE_ADMIN">Admin</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit" id="addBtn" class="btn-primary btn-press">Add User</button>
-        </form>
-    </div>
-
-    <!-- Users Table -->
-    <div class="bg-white rounded-xl border border-slate-200/80 overflow-hidden">
-        <div class="px-5 sm:px-6 py-4 border-b border-slate-100">
-            <h2 class="text-base font-semibold text-slate-800">All Users</h2>
-        </div>
-        <div id="usersContainer" class="p-5 sm:p-6">
-            <div class="flex items-center justify-center gap-3 py-8 text-slate-400">
-                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-                <span class="text-sm">Loading users...</span>
-            </div>
-        </div>
-    </div>
-
-</main>
-
 <script>
+    // --- JWT Auth Helpers ---
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getAuthHeaders(extra) {
+        const headers = { 'Authorization': 'Bearer ' + getToken() };
+        if (extra) Object.assign(headers, extra);
+        return headers;
+    }
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('jwt_username');
+        localStorage.removeItem('jwt_role');
+        window.location.href = '/login.html?logout';
+    }
+    function checkAuth(res) {
+        if (res.status === 401 || res.status === 403) {
+            logout();
+            return false;
+        }
+        return true;
+    }
+    if (!getToken()) { window.location.href = '/login.html'; }
+
+    // Check if current user is admin
+    const storedRole = localStorage.getItem('jwt_role');
+    if (storedRole !== 'ROLE_ADMIN') {
+        window.location.href = '/dashboard.html';
+    }
+
+    // Dropdown menu
+    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
+    const navDropdownContent = document.getElementById('nav-dropdown-content');
+    navDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navDropdownContent.classList.toggle('show');
+    });
+    document.addEventListener('click', () => {
+        navDropdownContent.classList.remove('show');
+    });
+
+    // User info
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Server-side role check: redirect non-admins
+                    if (user.role !== 'ROLE_ADMIN') {
+                        window.location.href = '/dashboard.html';
+                        return;
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
     loadCurrentUser();
 
+    const msgEl = document.getElementById('msg');
     const usersContainer = document.getElementById('usersContainer');
+
+    function showMessage(text, type) {
+        msgEl.textContent = text;
+        msgEl.className = 'message ' + type;
+        setTimeout(() => { msgEl.className = 'message'; }, 5000);
+    }
 
     // Load users
     async function loadUsers() {
-        showSpinner(usersContainer, 'Loading users...');
+        usersContainer.textContent = 'Loading...';
         try {
             const res = await fetch('/api/admin/users', { headers: getAuthHeaders() });
             if (!checkAuth(res)) return;
             if (!res.ok) {
-                usersContainer.innerHTML = `<p class="text-sm text-rose-500 text-center py-4">Error loading users: ${res.status}</p>`;
+                usersContainer.textContent = 'Error loading users: ' + res.status;
                 return;
             }
-            renderUsers(await res.json());
+            const users = await res.json();
+            renderUsers(users);
         } catch (err) {
-            usersContainer.innerHTML = `<p class="text-sm text-rose-500 text-center py-4">Network error: ${err.message}</p>`;
+            usersContainer.textContent = 'Network error: ' + err.message;
         }
     }
 
     function renderUsers(users) {
         if (users.length === 0) {
-            usersContainer.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">No users found.</p>';
+            usersContainer.textContent = 'No users found.';
             return;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'overflow-x-auto -mx-5 sm:-mx-6';
-
         const table = document.createElement('table');
-        table.className = 'data-table';
         table.innerHTML = `
             <thead>
                 <tr>
@@ -187,49 +597,36 @@
         users.forEach(u => {
             const tr = document.createElement('tr');
             const roleBadge = u.role === 'ROLE_ADMIN'
-                ? '<span class="badge badge-admin">Admin</span>'
-                : '<span class="badge badge-user">User</span>';
+                ? '<span class="role-badge admin">Admin</span>'
+                : '<span class="role-badge user">User</span>';
             const statusBadge = u.enabled
-                ? '<span class="badge badge-enabled">Enabled</span>'
-                : '<span class="badge badge-disabled">Disabled</span>';
+                ? '<span class="status-badge enabled">Enabled</span>'
+                : '<span class="status-badge disabled">Disabled</span>';
 
             tr.innerHTML = `
-                <td><span class="font-semibold text-slate-800">${u.username}</span></td>
-                <td class="text-slate-500">${u.email || '<span class="text-slate-300">-</span>'}</td>
+                <td><strong>${u.username}</strong></td>
+                <td>${u.email || '-'}</td>
                 <td>${roleBadge}</td>
                 <td>${statusBadge}</td>
-                <td class="whitespace-nowrap"></td>
+                <td class="actions">
+                    <button class="btn btn-secondary" onclick="openEditModal(${u.id}, '${u.username}', '${u.email || ''}', '${u.role}', ${u.enabled})">Edit</button>
+                    <button class="btn btn-danger" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>
+                </td>
             `;
-
-            // Build action buttons with proper event listeners (avoids inline onclick with string escaping issues)
-            const tdActions = tr.querySelector('td:last-child');
-
-            const editBtn = document.createElement('button');
-            editBtn.className = 'btn-ghost text-xs text-indigo-600 hover:text-indigo-800';
-            editBtn.textContent = 'Edit';
-            editBtn.addEventListener('click', () => openEditModal(u.id, u.username, u.email || '', u.role, u.enabled));
-            tdActions.appendChild(editBtn);
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'btn-ghost text-xs text-rose-600 hover:text-rose-800';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.addEventListener('click', () => deleteUser(u.id, u.username));
-            tdActions.appendChild(deleteBtn);
-
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        wrapper.appendChild(table);
 
         usersContainer.innerHTML = '';
-        usersContainer.appendChild(wrapper);
+        usersContainer.appendChild(table);
     }
 
     // Add user
     document.getElementById('addUserForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const addBtn = document.getElementById('addBtn');
-        setBtnLoading(addBtn, true, 'Adding...');
+        addBtn.disabled = true;
+        addBtn.textContent = 'Adding...';
 
         const body = {
             username: document.getElementById('newUsername').value.trim(),
@@ -246,16 +643,17 @@
             });
             const data = await res.json();
             if (res.ok) {
-                showToast('User created successfully', 'success');
+                showMessage('User created successfully', 'success');
                 document.getElementById('addUserForm').reset();
                 await loadUsers();
             } else {
-                showToast(data.error || 'Failed to create user', 'error');
+                showMessage(data.error || 'Failed to create user', 'error');
             }
         } catch (err) {
-            showToast('Network error: ' + err.message, 'error');
+            showMessage('Network error: ' + err.message, 'error');
         } finally {
-            setBtnLoading(addBtn, false, 'Add User');
+            addBtn.disabled = false;
+            addBtn.textContent = 'Add User';
         }
     });
 
@@ -297,14 +695,14 @@
             });
             const data = await res.json();
             if (res.ok) {
-                showToast('User updated successfully', 'success');
+                showMessage('User updated successfully', 'success');
                 closeEditModal();
                 await loadUsers();
             } else {
-                showToast(data.error || 'Failed to update user', 'error');
+                showMessage(data.error || 'Failed to update user', 'error');
             }
         } catch (err) {
-            showToast('Network error: ' + err.message, 'error');
+            showMessage('Network error: ' + err.message, 'error');
         }
     });
 
@@ -319,13 +717,13 @@
             });
             const data = await res.json();
             if (res.ok) {
-                showToast('User deleted', 'success');
+                showMessage('User deleted', 'success');
                 await loadUsers();
             } else {
-                showToast(data.error || 'Failed to delete user', 'error');
+                showMessage(data.error || 'Failed to delete user', 'error');
             }
         } catch (err) {
-            showToast('Network error: ' + err.message, 'error');
+            showMessage('Network error: ' + err.message, 'error');
         }
     }
 
@@ -339,18 +737,18 @@
             const res = await fetch('/api/admin/registrations', { headers: getAuthHeaders() });
             if (!checkAuth(res)) return;
             if (!res.ok) {
-                pendingContainer.innerHTML = '<p class="text-sm text-rose-500 text-center py-4">Error loading requests</p>';
+                pendingContainer.textContent = 'Error loading requests';
                 return;
             }
             const requests = await res.json();
             const pending = requests.filter(r => r.status === 'PENDING');
 
             if (requests.length === 0) {
-                pendingSection.classList.add('hidden');
+                pendingSection.style.display = 'none';
                 return;
             }
 
-            pendingSection.classList.remove('hidden');
+            pendingSection.style.display = 'block';
             pendingCountEl.textContent = pending.length;
             renderPendingRequests(requests);
         } catch (err) {
@@ -360,15 +758,11 @@
 
     function renderPendingRequests(requests) {
         if (requests.length === 0) {
-            pendingContainer.innerHTML = '<p class="text-sm text-slate-400 text-center py-4">No registration requests.</p>';
+            pendingContainer.textContent = 'No registration requests.';
             return;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'overflow-x-auto -mx-5 sm:-mx-6';
-
         const table = document.createElement('table');
-        table.className = 'data-table';
         table.innerHTML = `
             <thead>
                 <tr>
@@ -389,47 +783,35 @@
                 hour: '2-digit', minute: '2-digit'
             });
 
-            tr.innerHTML = `
-                <td><span class="font-semibold text-slate-800">${r.email}</span></td>
-                <td><span class="badge badge-${statusClass}">${r.status}</span></td>
-                <td class="text-xs text-slate-500">${date}</td>
-                <td class="whitespace-nowrap"></td>
-            `;
-
-            const tdActions = tr.querySelector('td:last-child');
-
+            let actionsHtml = '';
             if (r.status === 'PENDING') {
-                const roleSelect = document.createElement('select');
-                roleSelect.className = 'form-select text-xs py-1 px-2 w-auto inline-block mr-1.5';
-                roleSelect.id = 'role-' + r.id;
-                roleSelect.innerHTML = '<option value="ROLE_USER">User</option><option value="ROLE_ADMIN">Admin</option>';
-                tdActions.appendChild(roleSelect);
-
-                const approveBtn = document.createElement('button');
-                approveBtn.className = 'btn-ghost text-xs text-emerald-600 hover:text-emerald-800 font-semibold';
-                approveBtn.textContent = 'Approve';
-                approveBtn.addEventListener('click', () => approveRequest(r.id));
-                tdActions.appendChild(approveBtn);
-
-                const rejectBtn = document.createElement('button');
-                rejectBtn.className = 'btn-ghost text-xs text-rose-600 hover:text-rose-800 font-semibold';
-                rejectBtn.textContent = 'Reject';
-                rejectBtn.addEventListener('click', () => rejectRequest(r.id));
-                tdActions.appendChild(rejectBtn);
+                actionsHtml = `
+                    <select class="role-select-small" id="role-${r.id}">
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                    <button class="btn btn-approve" onclick="approveRequest(${r.id})">Approve</button>
+                    <button class="btn btn-reject" onclick="rejectRequest(${r.id})">Reject</button>
+                `;
             } else if (r.status === 'APPROVED') {
                 const roleName = r.approvedRole === 'ROLE_ADMIN' ? 'Admin' : 'User';
-                tdActions.innerHTML = `<span class="text-xs text-slate-400">Approved as ${roleName}</span>`;
+                actionsHtml = `<span style="font-size:0.8rem;color:#64748b;">Approved as ${roleName}</span>`;
             } else {
-                tdActions.innerHTML = '<span class="text-xs text-slate-400">-</span>';
+                actionsHtml = `<span style="font-size:0.8rem;color:#64748b;">-</span>`;
             }
 
+            tr.innerHTML = `
+                <td><strong>${r.email}</strong></td>
+                <td><span class="status-badge ${statusClass}">${r.status}</span></td>
+                <td style="font-size:0.85rem;color:#64748b;">${date}</td>
+                <td class="actions">${actionsHtml}</td>
+            `;
             tbody.appendChild(tr);
         });
         table.appendChild(tbody);
-        wrapper.appendChild(table);
 
         pendingContainer.innerHTML = '';
-        pendingContainer.appendChild(wrapper);
+        pendingContainer.appendChild(table);
     }
 
     async function approveRequest(id) {
@@ -442,13 +824,13 @@
             });
             const data = await res.json();
             if (res.ok) {
-                showToast('Registration approved and email sent', 'success');
+                showMessage('Registration approved and email sent', 'success');
                 await loadPendingRequests();
             } else {
-                showToast(data.error || 'Failed to approve', 'error');
+                showMessage(data.error || 'Failed to approve', 'error');
             }
         } catch (err) {
-            showToast('Network error: ' + err.message, 'error');
+            showMessage('Network error: ' + err.message, 'error');
         }
     }
 
@@ -461,13 +843,13 @@
             });
             const data = await res.json();
             if (res.ok) {
-                showToast('Registration rejected', 'success');
+                showMessage('Registration rejected', 'success');
                 await loadPendingRequests();
             } else {
-                showToast(data.error || 'Failed to reject', 'error');
+                showMessage(data.error || 'Failed to reject', 'error');
             }
         } catch (err) {
-            showToast('Network error: ' + err.message, 'error');
+            showMessage('Network error: ' + err.message, 'error');
         }
     }
 

@@ -4,111 +4,548 @@
     <meta charset="UTF-8">
     <title>Occupancy Chart – Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
-                }
-            }
-        }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
-    <link rel="stylesheet" href="/common.css">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* User header bar */
+        .user-header {
+            background: #1e293b;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .user-header .app-name {
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+        }
+
+        .user-header .app-name:hover {
+            color: #94a3b8;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Dropdown Menu */
+        .nav-dropdown {
+            position: relative;
+        }
+
+        .nav-dropdown-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-dropdown-btn:hover {
+            background: #475569;
+        }
+
+        .nav-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            margin-top: 8px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-width: 200px;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        .nav-dropdown-content.show {
+            display: block;
+        }
+
+        .nav-dropdown-content a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            color: #1e293b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background 0.15s;
+        }
+
+        .nav-dropdown-content a:hover {
+            background: #f1f5f9;
+        }
+
+        .nav-dropdown-content a.active {
+            background: #eff6ff;
+            color: #2563eb;
+            font-weight: 500;
+        }
+
+        .nav-dropdown-content .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 4px 0;
+        }
+
+        .nav-dropdown-content .menu-icon {
+            width: 18px;
+            text-align: center;
+        }
+
+        .nav-dropdown-content .admin-badge {
+            font-size: 0.65rem;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        /* Hide admin-only nav links by default */
+        .admin-only-nav {
+            display: none !important;
+        }
+
+        .admin-only-nav.visible {
+            display: flex !important;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #4ade80;
+            cursor: pointer;
+        }
+
+        .user-info .user-details {
+            text-align: right;
+        }
+
+        .user-info .user-name {
+            font-weight: 500;
+        }
+
+        .user-info .user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-top: 0;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 24px;
+        }
+
+        /* Date range picker */
+        .controls {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .control-group input[type="date"] {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .quick-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .quick-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .refresh-btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .refresh-btn:hover {
+            background: #1d4ed8;
+        }
+
+        /* Chart container */
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 24px;
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .summary-card .label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .summary-card.residents .value {
+            color: #2563eb;
+        }
+
+        .summary-card.non-residents .value {
+            color: #dc2626;
+        }
+
+        .summary-card.capacity .value {
+            color: #16a34a;
+        }
+
+        .summary-card.over-capacity .value {
+            color: #dc2626;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.residents {
+            background: #3b82f6;
+        }
+
+        .legend-color.non-residents {
+            background: #ef4444;
+        }
+
+        .legend-color.capacity {
+            background: #22c55e;
+            height: 3px;
+            width: 24px;
+        }
+
+        /* Navigation */
+        .nav {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+    </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+<body>
 
-<script src="/common.js"></script>
-<script>
-    requireAuth();
-    renderNavDrawer('occupancy');
-</script>
+<!-- User header bar -->
+<div class="user-header">
+    <a href="/dashboard.html" class="app-name">🚗 Parking Scanner</a>
+    <div class="header-right">
+        <!-- Navigation Dropdown -->
+        <div class="nav-dropdown">
+            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
+                <span>☰</span> Menu
+            </button>
+            <div class="nav-dropdown-content" id="nav-dropdown-content">
+                <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
+                <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
+                <div class="divider"></div>
+                <a href="/residents.html" class="admin-only-nav"><span class="menu-icon">👥</span> Residents <span class="admin-badge">Admin</span></a>
+                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
+                <a href="/occupancy.html" class="active"><span class="menu-icon">📈</span> Occupancy Chart</a>
+                <div class="divider"></div>
+                <a href="/users.html" class="admin-only-nav"><span class="menu-icon">👤</span> User Management <span class="admin-badge">Admin</span></a>
+                <div class="divider"></div>
+                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
+            </div>
+        </div>
 
-<!-- Main content -->
-<main class="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16 page-fade-in">
+        <!-- User Info -->
+        <div class="user-info" id="user-info">
+            <div class="user-details">
+                <div class="user-name" id="user-name">Loading...</div>
+                <div class="user-role" id="user-role"></div>
+            </div>
+            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
+        </div>
+    </div>
+</div>
 
-    <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-slate-800">Parking Occupancy Chart</h1>
-        <p class="text-sm text-slate-500 mt-1">Visualize parking usage: Residents vs Non-Residents compared to capacity (96 spots)</p>
+<div class="container">
+    <h1>📊 Parking Occupancy Chart</h1>
+    <div class="subtitle">
+        Visualize parking usage: Residents vs Non-Residents compared to capacity (96 spots)
     </div>
 
     <!-- Controls -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6 mb-6">
-        <div class="flex flex-wrap items-end gap-4">
-            <div>
-                <label for="startDate" class="block text-xs font-semibold text-slate-500 mb-1">Start Date</label>
-                <input type="date" id="startDate" class="form-input text-sm py-2 px-3">
+    <div class="controls">
+        <div class="control-group">
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="control-group">
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate">
+        </div>
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <div class="quick-btns">
+                <button class="quick-btn active" data-days="7">Last 7 days</button>
+                <button class="quick-btn" data-days="14">Last 14 days</button>
+                <button class="quick-btn" data-days="30">Last 30 days</button>
             </div>
-            <div>
-                <label for="endDate" class="block text-xs font-semibold text-slate-500 mb-1">End Date</label>
-                <input type="date" id="endDate" class="form-input text-sm py-2 px-3">
-            </div>
-            <div class="flex gap-1.5 flex-wrap">
-                <button class="quick-btn px-3 py-2 rounded-lg border border-slate-200 bg-indigo-600 text-white text-xs font-medium cursor-pointer transition-all hover:bg-indigo-700" data-days="7">Last 7 days</button>
-                <button class="quick-btn px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium cursor-pointer transition-all hover:bg-slate-50" data-days="14">Last 14 days</button>
-                <button class="quick-btn px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-medium cursor-pointer transition-all hover:bg-slate-50" data-days="30">Last 30 days</button>
-            </div>
-            <button id="refresh-btn" class="btn-primary btn-press text-sm py-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Refresh
-            </button>
+        </div>
+        <div class="control-group">
+            <label>&nbsp;</label>
+            <button class="refresh-btn" id="refresh-btn">🔄 Refresh</button>
         </div>
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div class="bg-white rounded-xl border border-slate-200/80 p-4 text-center">
-            <div class="text-2xl font-bold text-slate-800" id="total-scans">-</div>
-            <div class="text-xs text-slate-500 mt-1 font-medium">Total Scans</div>
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="value" id="total-scans">-</div>
+            <div class="label">Total Scans</div>
         </div>
-        <div class="bg-white rounded-xl border border-indigo-200/80 p-4 text-center">
-            <div class="text-2xl font-bold text-indigo-600" id="total-residents">-</div>
-            <div class="text-xs text-slate-500 mt-1 font-medium">Residents</div>
+        <div class="summary-card residents">
+            <div class="value" id="total-residents">-</div>
+            <div class="label">Residents</div>
         </div>
-        <div class="bg-white rounded-xl border border-rose-200/80 p-4 text-center">
-            <div class="text-2xl font-bold text-rose-600" id="total-non-residents">-</div>
-            <div class="text-xs text-slate-500 mt-1 font-medium">Non-Residents</div>
+        <div class="summary-card non-residents">
+            <div class="value" id="total-non-residents">-</div>
+            <div class="label">Non-Residents</div>
         </div>
-        <div class="bg-white rounded-xl border border-emerald-200/80 p-4 text-center">
-            <div class="text-2xl font-bold text-emerald-600" id="avg-occupancy">-</div>
-            <div class="text-xs text-slate-500 mt-1 font-medium">Avg Occupancy %</div>
+        <div class="summary-card capacity">
+            <div class="value" id="avg-occupancy">-</div>
+            <div class="label">Avg Occupancy %</div>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200/80 p-4 text-center" id="over-capacity-card">
-            <div class="text-2xl font-bold text-slate-800" id="over-capacity-days">-</div>
-            <div class="text-xs text-slate-500 mt-1 font-medium">Days Over Capacity</div>
+        <div class="summary-card" id="over-capacity-card">
+            <div class="value" id="over-capacity-days">-</div>
+            <div class="label">Days Over Capacity</div>
         </div>
     </div>
 
     <!-- Legend -->
-    <div class="flex justify-center gap-6 mb-4 text-sm">
-        <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-[#6366f1]"></div>
-            <span class="text-slate-600">Residents</span>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color residents"></div>
+            <span>Residents</span>
         </div>
-        <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-[#f43f5e]"></div>
-            <span class="text-slate-600">Non-Residents</span>
+        <div class="legend-item">
+            <div class="legend-color non-residents"></div>
+            <span>Non-Residents</span>
         </div>
-        <div class="flex items-center gap-2">
-            <div class="w-6 h-0.5 bg-emerald-500 rounded"></div>
-            <span class="text-slate-600">Capacity (96)</span>
+        <div class="legend-item">
+            <div class="legend-color capacity"></div>
+            <span>Capacity (96)</span>
         </div>
     </div>
 
     <!-- Chart -->
-    <div class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6">
-        <div class="relative h-[400px]">
-            <canvas id="occupancyChart"></canvas>
-        </div>
+    <div class="chart-container">
+        <canvas id="occupancyChart"></canvas>
     </div>
 
-</main>
+    <!-- Navigation -->
+    <div class="nav">
+        <a href="/dashboard.html">← Dashboard</a> ·
+        <a href="/stats.html">Session Stats</a><span class="admin-only-nav" style="display:none;"> ·
+        <a href="/residents.html">Manage Residents</a></span>
+    </div>
+</div>
 
 <script>
+    // --- JWT Auth Helpers ---
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function getAuthHeaders(extra) {
+        const headers = { 'Authorization': 'Bearer ' + getToken() };
+        if (extra) Object.assign(headers, extra);
+        return headers;
+    }
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('jwt_username');
+        localStorage.removeItem('jwt_role');
+        window.location.href = '/login.html?logout';
+    }
+    function checkAuth(res) {
+        if (res.status === 401 || res.status === 403) {
+            logout();
+            return false;
+        }
+        return true;
+    }
+    if (!getToken()) { window.location.href = '/login.html'; }
+
+    // Dropdown menu toggle
+    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
+    const navDropdownContent = document.getElementById('nav-dropdown-content');
+
+    navDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navDropdownContent.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+        navDropdownContent.classList.remove('show');
+    });
+
+    // User info
+    const userNameEl = document.getElementById('user-name');
+    const userRoleEl = document.getElementById('user-role');
+    const userAvatarEl = document.getElementById('user-avatar');
+
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
+            if (!checkAuth(res)) return;
+            if (res.ok) {
+                const user = await res.json();
+                if (user.authenticated) {
+                    userNameEl.textContent = user.name || 'User';
+                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
+
+                    // Show admin-only nav links
+                    if (user.role === 'ROLE_ADMIN') {
+                        document.querySelectorAll('.admin-only-nav').forEach(el => el.classList.add('visible'));
+                    }
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to load user info', err);
+        }
+    }
     loadCurrentUser();
 
     // Date controls
@@ -117,24 +554,23 @@
     const quickBtns = document.querySelectorAll('.quick-btn');
     const refreshBtn = document.getElementById('refresh-btn');
 
+    // Set default dates (last 7 days)
     function setDateRange(days) {
         const end = new Date();
         const start = new Date();
         start.setDate(end.getDate() - days + 1);
+
         endDateInput.value = end.toISOString().split('T')[0];
         startDateInput.value = start.toISOString().split('T')[0];
     }
 
     setDateRange(7);
 
+    // Quick button handlers
     quickBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            quickBtns.forEach(b => {
-                b.classList.remove('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
-                b.classList.add('bg-white', 'text-slate-600', 'hover:bg-slate-50');
-            });
-            btn.classList.remove('bg-white', 'text-slate-600', 'hover:bg-slate-50');
-            btn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700');
+            quickBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             setDateRange(parseInt(btn.dataset.days));
             loadChartData();
         });
@@ -142,6 +578,7 @@
 
     refreshBtn.addEventListener('click', loadChartData);
 
+    // Chart instance
     let occupancyChart = null;
 
     async function loadChartData() {
@@ -150,25 +587,28 @@
 
         try {
             const res = await fetch(`/stats/occupancy?startDate=${startDate}&endDate=${endDate}`, { headers: getAuthHeaders() });
-            if (!checkAuth(res)) return;
             if (!res.ok) throw new Error('Failed to load data');
 
             const data = await res.json();
             renderChart(data);
             updateSummary(data);
         } catch (err) {
-            showToast('Error loading chart data: ' + err.message, 'error');
+            console.error('Error loading chart data:', err);
         }
     }
 
     function renderChart(data) {
         const ctx = document.getElementById('occupancyChart').getContext('2d');
 
+        // Prepare labels and data (including average as last column)
         const labels = [...data.dataPoints.map(d => d.label), 'Average'];
         const residentsData = [...data.dataPoints.map(d => d.residentCount), data.average.residentCount];
         const nonResidentsData = [...data.dataPoints.map(d => d.nonResidentCount), data.average.nonResidentCount];
 
-        if (occupancyChart) occupancyChart.destroy();
+        // Destroy existing chart if exists
+        if (occupancyChart) {
+            occupancyChart.destroy();
+        }
 
         occupancyChart = new Chart(ctx, {
             type: 'bar',
@@ -178,14 +618,14 @@
                     {
                         label: 'Residents',
                         data: residentsData,
-                        backgroundColor: '#6366f1',
+                        backgroundColor: '#3b82f6',
                         borderRadius: 4,
                         borderSkipped: false,
                     },
                     {
                         label: 'Non-Residents',
                         data: nonResidentsData,
-                        backgroundColor: '#f43f5e',
+                        backgroundColor: '#ef4444',
                         borderRadius: 4,
                         borderSkipped: false,
                     }
@@ -197,14 +637,21 @@
                 scales: {
                     x: {
                         stacked: true,
-                        grid: { display: false }
+                        grid: {
+                            display: false
+                        }
                     },
                     y: {
                         stacked: true,
                         beginAtZero: true,
                         max: Math.max(data.capacity + 20, ...data.dataPoints.map(d => d.totalCount + 10)),
-                        grid: { color: '#f1f5f9' },
-                        title: { display: true, text: 'Number of Cars', color: '#64748b', font: { size: 12 } }
+                        grid: {
+                            color: '#e5e7eb'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Number of Cars'
+                        }
                     }
                 },
                 plugins: {
@@ -214,28 +661,24 @@
                                 type: 'line',
                                 yMin: data.capacity,
                                 yMax: data.capacity,
-                                borderColor: '#10b981',
-                                borderWidth: 2.5,
+                                borderColor: '#22c55e',
+                                borderWidth: 3,
                                 borderDash: [6, 6],
                                 label: {
                                     display: true,
                                     content: `Capacity: ${data.capacity}`,
                                     position: 'end',
-                                    backgroundColor: '#10b981',
+                                    backgroundColor: '#22c55e',
                                     color: 'white',
-                                    font: { size: 11, weight: 'bold' }
+                                    font: {
+                                        size: 11,
+                                        weight: 'bold'
+                                    }
                                 }
                             }
                         }
                     },
                     tooltip: {
-                        backgroundColor: '#1e293b',
-                        titleColor: '#f8fafc',
-                        bodyColor: '#cbd5e1',
-                        borderColor: '#334155',
-                        borderWidth: 1,
-                        cornerRadius: 8,
-                        padding: 12,
                         callbacks: {
                             afterBody: function(context) {
                                 const dataIndex = context[0].dataIndex;
@@ -252,13 +695,23 @@
                                     isOverCapacity = data.average.overCapacity;
                                 }
 
-                                let lines = ['', `Total: ${total}`, `Occupancy: ${occupancyPct}%`];
-                                if (isOverCapacity) lines.push('OVER CAPACITY');
+                                let lines = [
+                                    '',
+                                    `Total: ${total}`,
+                                    `Occupancy: ${occupancyPct}%`
+                                ];
+
+                                if (isOverCapacity) {
+                                    lines.push('⚠️ OVER CAPACITY');
+                                }
+
                                 return lines;
                             }
                         }
                     },
-                    legend: { display: false }
+                    legend: {
+                        display: false
+                    }
                 }
             }
         });
@@ -277,18 +730,12 @@
         document.getElementById('avg-occupancy').textContent = avgOccupancy + '%';
         document.getElementById('over-capacity-days').textContent = overCapacityDays;
 
-        const overCard = document.getElementById('over-capacity-card');
-        const overValue = document.getElementById('over-capacity-days');
+        // Highlight over-capacity card if there are over-capacity days
+        const overCapacityCard = document.getElementById('over-capacity-card');
         if (overCapacityDays > 0) {
-            overCard.classList.remove('border-slate-200/80');
-            overCard.classList.add('border-rose-200/80');
-            overValue.classList.remove('text-slate-800');
-            overValue.classList.add('text-rose-600');
+            overCapacityCard.classList.add('over-capacity');
         } else {
-            overCard.classList.add('border-slate-200/80');
-            overCard.classList.remove('border-rose-200/80');
-            overValue.classList.add('text-slate-800');
-            overValue.classList.remove('text-rose-600');
+            overCapacityCard.classList.remove('over-capacity');
         }
     }
 
@@ -298,3 +745,4 @@
 
 </body>
 </html>
+

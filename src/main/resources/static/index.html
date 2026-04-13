@@ -2,666 +2,129 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Parking Scanner</title>
+    <title>Scan Plates – Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
-    <style>
-        * {
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        /* User header bar */
-        .user-header {
-            background: #1e293b;
-            color: white;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        .user-header .app-name {
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            color: white;
-        }
-
-        .user-header .app-name:hover {
-            color: #94a3b8;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        /* Dropdown Menu */
-        .nav-dropdown {
-            position: relative;
-        }
-
-        .nav-dropdown-btn {
-            background: #334155;
-            border: none;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .nav-dropdown-btn:hover {
-            background: #475569;
-        }
-
-        .nav-dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
-            margin-top: 8px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            min-width: 200px;
-            z-index: 100;
-            overflow: hidden;
-        }
-
-        .nav-dropdown-content.show {
-            display: block;
-        }
-
-        .nav-dropdown-content a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            color: #1e293b;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: background 0.15s;
-        }
-
-        .nav-dropdown-content a:hover {
-            background: #f1f5f9;
-        }
-
-        .nav-dropdown-content a.active {
-            background: #eff6ff;
-            color: #2563eb;
-            font-weight: 500;
-        }
-
-        .nav-dropdown-content .divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 4px 0;
-        }
-
-        .nav-dropdown-content .menu-icon {
-            width: 18px;
-            text-align: center;
-        }
-
-        .nav-dropdown-content .admin-badge {
-            font-size: 0.65rem;
-            background: #fef3c7;
-            color: #92400e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: auto;
-        }
-
-        /* Hide admin-only nav links by default */
-        .admin-only-nav {
-            display: none !important;
-        }
-
-        .admin-only-nav.visible {
-            display: flex !important;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-info img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid #4ade80;
-        }
-
-        .user-info .user-details {
-            text-align: right;
-        }
-
-        .user-info .user-name {
-            font-weight: 500;
-        }
-
-        .user-info .user-role {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        .container {
-            max-width: 640px;
-            margin: 20px auto;
-            background: #ffffff;
-            padding: 20px;
-            padding-bottom: 80px; /* Extra space at bottom for keyboard */
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-            min-height: calc(100vh - 120px);
-            max-height: calc(100vh - 80px);
-            overflow-y: auto;
-            position: relative;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 16px;
-                padding-bottom: 100px;
-                border-radius: 8px;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
+                }
             }
         }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 1.05rem;
-            box-sizing: border-box;
-            margin-bottom: 12px;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            margin-top: 0;
-            margin-bottom: 12px;
-            text-align: center;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: none;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            background: #2563eb;
-            color: white;
-        }
-
-        /* Submit button specific styling */
-        button[type="submit"] {
-            background: #15803d;
-            color: white;
-            padding: 14px 16px;
-            font-size: 1.1rem;
-            margin-top: 16px;
-            box-shadow: 0 4px 12px rgba(21, 128, 61, 0.3);
-            transition: all 0.2s;
-        }
-
-        button[type="submit"]:hover:not(:disabled) {
-            background: #166534;
-            box-shadow: 0 6px 16px rgba(21, 128, 61, 0.4);
-            transform: translateY(-1px);
-        }
-
-        button[type="submit"]:active:not(:disabled) {
-            transform: translateY(0);
-        }
-
-        button:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
-
-        .message {
-            margin-top: 12px;
-            text-align: center;
-            font-size: 0.95rem;
-        }
-
-        .message.success {
-            color: #15803d;
-        }
-
-        .message.error {
-            color: #b91c1c;
-        }
-
-        .nav {
-            text-align: center;
-            margin-top: 12px;
-            font-size: 0.9rem;
-        }
-
-        .nav a {
-            color: #2563eb;
-            text-decoration: none;
-        }
-
-        .nav a:hover {
-            text-decoration: underline;
-        }
-
-        .session-suggestions {
-            display: none;
-            gap: 6px;
-            flex-wrap: wrap;
-            margin-top: -6px;
-            margin-bottom: 10px;
-            font-size: 0.8rem;
-            align-items: center;
-        }
-
-        .session-suggestions.visible {
-            display: flex;
-        }
-
-        .session-chip {
-            border-radius: 999px;
-            border: none;
-            padding: 4px 10px;
-            background: #e5e7eb;
-            color: #111827;
-            cursor: pointer;
-            font-size: 0.75rem;
-        }
-
-        .session-chip:hover {
-            background: #dbeafe;
-        }
-
-
-        /* Simple full-screen overlay for side selection */
-        .side-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.65);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-
-        .side-overlay.hidden {
-            display: none;
-        }
-
-        .side-dialog {
-            background: #ffffff;
-            padding: 20px 24px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 360px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
-            position: relative;
-        }
-
-        .side-dialog .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 28px;
-            height: 28px;
-            border: none;
-            background: #f3f4f6;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: #6b7280;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        .side-dialog .close-btn:hover {
-            background: #e5e7eb;
-            color: #111827;
-        }
-
-        .side-dialog h2 {
-            margin-top: 0;
-            margin-bottom: 12px;
-            font-size: 1.2rem;
-        }
-
-        .side-dialog select {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: 1px solid #d1d5db;
-            font-size: 1rem;
-            margin-bottom: 12px;
-        }
-
-        .side-dialog button {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 8px;
-            border: none;
-            background: #2563eb;
-            color: #ffffff;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .side-dialog small {
-            display: block;
-            margin-top: 6px;
-            color: #6b7280;
-            font-size: 0.8rem;
-        }
-
-        .slot-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-
-        .slot-label {
-            font-weight: 600;
-            color: #111827;
-            transition: color 0.2s;
-        }
-
-        .slot-controls {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .slot-btn {
-            padding: 4px 10px;
-            border-radius: 999px;
-            border: none;
-            background: #e5e7eb;
-            color: #111827;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-
-        .slot-btn:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
-
-        .spot-adjust-btn {
-            width: 28px;
-            height: 28px;
-            padding: 0;
-            border-radius: 50%;
-            border: 2px solid #2563eb;
-            background: white;
-            color: #2563eb;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            line-height: 1;
-        }
-
-        .spot-adjust-btn:hover {
-            background: #2563eb;
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .spot-adjust-btn:active {
-            transform: scale(0.95);
-        }
-
-        .spot-adjust-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            border-color: #9ca3af;
-            color: #9ca3af;
-        }
-
-        .spot-adjust-btn:disabled:hover {
-            background: white;
-            color: #9ca3af;
-            transform: none;
-        }
-
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+    <link rel="stylesheet" href="/common.css">
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
 
-<!-- User header bar -->
-<div class="user-header">
-    <a href="/dashboard.html" class="app-name">🚗 Parking Scanner</a>
-    <div class="header-right">
-        <!-- Navigation Dropdown -->
-        <div class="nav-dropdown">
-            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
-                <span>☰</span> Menu
+<!-- Side selection modal -->
+<div id="side-overlay" class="modal-overlay show">
+    <div class="modal-panel max-w-sm w-[92%]">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-lg font-semibold text-slate-800">Select parking side</h2>
+            <button type="button" id="side-close-btn" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
             </button>
-            <div class="nav-dropdown-content" id="nav-dropdown-content">
-                <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
-                <a href="/index.html" class="active"><span class="menu-icon">📷</span> Scan Plates</a>
-                <div class="divider"></div>
-                <a href="/residents.html" class="admin-only-nav"><span class="menu-icon">👥</span> Residents <span class="admin-badge">Admin</span></a>
-                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
-                <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
-                <div class="divider"></div>
-                <a href="/users.html" class="admin-only-nav"><span class="menu-icon">👤</span> User Management <span class="admin-badge">Admin</span></a>
-                <div class="divider"></div>
-                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
-            </div>
         </div>
-
-        <!-- User Info -->
-        <div class="user-info" id="user-info">
-            <div class="user-details">
-                <div class="user-name" id="user-name">Loading...</div>
-                <div class="user-role" id="user-role"></div>
-            </div>
-            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
-        </div>
-    </div>
-</div>
-
-<!-- Side selection overlay shown when page loads -->
-<div id="side-overlay" class="side-overlay">
-    <div class="side-dialog">
-        <button type="button" id="side-close-btn" class="close-btn" title="Close">✕</button>
-        <h2>Select parking side</h2>
-        <select id="side-select">
+        <select id="side-select" class="form-select mb-4">
             <option value="" disabled selected>Select side...</option>
             <option value="NORTH">North</option>
             <option value="SOUTH">South</option>
         </select>
-        <button type="button" id="side-confirm-btn">Continue</button>
-        <small>You can close this and select later using "Change parking side" button.</small>
+        <button type="button" id="side-confirm-btn" class="btn-primary w-full btn-press">Continue</button>
+        <p class="text-xs text-slate-400 text-center mt-3">You can close this and select later using the "Change side" button.</p>
     </div>
 </div>
 
-<div class="container">
-    <h1>Parking Scanner</h1>
+<!-- Main content -->
+<main class="max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-24 page-fade-in">
 
-    <form id="scan-form">
-        <label for="sessionName">Scan session name</label>
-        <input
-                type="text"
-                id="sessionName"
-                name="sessionName"
-                placeholder="MORNING-2025-11-25-01"
-        />
+    <div class="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
 
-        <div id="session-suggestions" class="session-suggestions">
-            <span style="align-self:center; color:#6b7280;">Quick set:</span>
-            <button type="button" class="session-chip" data-period="MORNING">Morning</button>
-            <button type="button" class="session-chip" data-period="NOON">Noon</button>
-            <button type="button" class="session-chip" data-period="EVENING">Evening</button>
-            <button type="button" class="session-chip" id="session-today-auto">Auto (now)</button>
+        <!-- Card header -->
+        <div class="px-5 pt-5 pb-4 border-b border-slate-100">
+            <h1 class="text-lg font-semibold text-slate-800 text-center">Parking Scanner</h1>
         </div>
 
-        <!-- New button to reopen side selection popup -->
-        <button type="button" id="change-side-btn" style="margin-bottom:12px;background:#e5e7eb;color:#111827;">
-            Change parking side
-        </button>
+        <form id="scan-form" class="p-5 space-y-4">
 
-        <label for="licensePlate">License plate</label>
-        <input
-                type="text"
-                id="licensePlate"
-                name="licensePlate"
-                placeholder="HHL32H"
-                class="awesomplete"
-                required
-                oninput="this.value = this.value.toUpperCase()"
-        />
-
-        <div id="plate-status" style="font-size:0.8rem; margin-top:-10px; margin-bottom:10px; color:#4b5563;"></div>
-
-        <!-- Automatic location counter row -->
-        <div id="slot-row" class="slot-row" style="display:none;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="color:#6b7280;">Current spot:</span>
-                <button type="button" id="spot-dec" class="spot-adjust-btn" title="Decrease spot number">-</button>
-                <span id="slot-label" class="slot-label">-</span>
-                <button type="button" id="spot-inc" class="spot-adjust-btn" title="Increase spot number">+</button>
+            <!-- Session name -->
+            <div>
+                <label for="sessionName" class="block text-sm font-semibold text-slate-700 mb-1.5">Scan session name</label>
+                <input type="text" id="sessionName" name="sessionName" placeholder="MORNING-2025-11-25" class="form-input" />
+                <!-- Session chips -->
+                <div id="session-suggestions" class="hidden mt-2 flex-wrap gap-1.5 items-center">
+                    <span class="text-xs text-slate-400 mr-1">Quick set:</span>
+                    <button type="button" class="session-chip px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer border-none" data-period="MORNING">Morning</button>
+                    <button type="button" class="session-chip px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer border-none" data-period="NOON">Noon</button>
+                    <button type="button" class="session-chip px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer border-none" data-period="EVENING">Evening</button>
+                    <button type="button" class="session-chip px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer border-none" id="session-today-auto">Auto (now)</button>
+                </div>
             </div>
-            <div class="slot-controls">
-                <button type="button" id="slot-prev" class="slot-btn">← Prev</button>
-                <button type="button" id="slot-next" class="slot-btn">Next →</button>
-                <button type="button" id="clear-history-btn" class="slot-btn" style="background:#ef4444;color:white;" title="Clear all saved entries">Clear History</button>
+
+            <!-- Change parking side button -->
+            <button type="button" id="change-side-btn" class="btn-secondary w-full btn-press">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                </svg>
+                Change parking side
+            </button>
+
+            <!-- License plate -->
+            <div>
+                <label for="licensePlate" class="block text-sm font-semibold text-slate-700 mb-1.5">License plate</label>
+                <input type="text" id="licensePlate" name="licensePlate" placeholder="HHL32H" class="form-input awesomplete" required oninput="this.value = this.value.toUpperCase()" />
+                <div id="plate-status" class="text-xs mt-1 h-4 text-slate-500"></div>
             </div>
-        </div>
 
-        <!-- No parking checkbox -->
-        <label style="display:flex; align-items:center; gap:6px; font-size:0.9rem; margin-bottom:12px;">
-            <input type="checkbox" id="no-parking-checkbox" style="width:auto;">
-            <span>This spot is a <strong>NO PARKING</strong> area</span>
-        </label>
+            <!-- Slot row / spot navigator -->
+            <div id="slot-row" class="hidden bg-slate-50 rounded-lg px-4 py-3">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xs text-slate-400 font-medium">Spot:</span>
+                        <button type="button" id="spot-dec" class="w-7 h-7 rounded-full border-2 border-indigo-400 text-indigo-500 bg-white flex items-center justify-center text-sm font-bold hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-indigo-400 disabled:hover:scale-100" title="Decrease spot number">-</button>
+                        <span id="slot-label" class="text-sm font-bold text-slate-800 min-w-[80px] text-center">-</span>
+                        <button type="button" id="spot-inc" class="w-7 h-7 rounded-full border-2 border-indigo-400 text-indigo-500 bg-white flex items-center justify-center text-sm font-bold hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:text-indigo-400 disabled:hover:scale-100" title="Increase spot number">+</button>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <button type="button" id="slot-prev" class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
+                        <button type="button" id="slot-next" class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+                        <button type="button" id="clear-history-btn" class="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer" title="Clear all saved entries">Clear</button>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Location field removed; location will be the selected side + index (e.g. NORTH-01) -->
+            <!-- No parking checkbox -->
+            <label class="flex items-center gap-2.5 text-sm cursor-pointer select-none">
+                <input type="checkbox" id="no-parking-checkbox" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                <span class="text-slate-600">This spot is a <strong class="text-slate-800">NO PARKING</strong> area</span>
+            </label>
 
-        <button type="submit" id="submit-btn">Submit</button>
-    </form>
-
-    <div id="message" class="message"></div>
-
-    <div class="nav">
-        <a href="/dashboard.html">← Back to Dashboard</a><br>
-        <a href="/residents.html" class="admin-only-nav" style="display:none;justify-content:center;">Manage residents &amp; plates →</a><br>
-        <a href="/stats.html">View session stats →</a>
-
+            <!-- Submit -->
+            <button type="submit" id="submit-btn" class="btn-success w-full py-3.5 text-base btn-press">Submit</button>
+        </form>
     </div>
-</div>
 
+</main>
+
+<script src="/common.js"></script>
 <script>
-    // --- JWT Auth Helpers ---
-    function getToken() { return localStorage.getItem('jwt_token'); }
-    function getAuthHeaders(extra) {
-        const headers = { 'Authorization': 'Bearer ' + getToken() };
-        if (extra) Object.assign(headers, extra);
-        return headers;
-    }
-    function logout() {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('jwt_username');
-        localStorage.removeItem('jwt_role');
-        window.location.href = '/login.html?logout';
-    }
-    function checkAuth(res) {
-        if (res.status === 401 || res.status === 403) {
-            logout();
-            return false;
-        }
-        return true;
-    }
-    if (!getToken()) { window.location.href = '/login.html'; }
-
-    // Dropdown menu toggle
-    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
-    const navDropdownContent = document.getElementById('nav-dropdown-content');
-
-    navDropdownBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        navDropdownContent.classList.toggle('show');
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', () => {
-        navDropdownContent.classList.remove('show');
-    });
-
-    // User info elements
-    const userNameEl = document.getElementById('user-name');
-    const userRoleEl = document.getElementById('user-role');
-    const userAvatarEl = document.getElementById('user-avatar');
-
-    // Fetch and display current user
-    async function loadCurrentUser() {
-        try {
-            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
-            if (!checkAuth(res)) return;
-            if (res.ok) {
-                const user = await res.json();
-                if (user.authenticated) {
-                    userNameEl.textContent = user.name || 'User';
-                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
-
-                    // Show admin-only nav links
-                    if (user.role === 'ROLE_ADMIN') {
-                        document.querySelectorAll('.admin-only-nav').forEach(el => el.classList.add('visible'));
-                    }
-                }
-            }
-        } catch (err) {
-            console.warn('Failed to load user info', err);
-        }
-    }
+    requireAuth();
+    renderNavDrawer('scan');
     loadCurrentUser();
 
     const form = document.getElementById('scan-form');
-    const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
 
     const plateStatusEl = document.getElementById('plate-status');
@@ -696,23 +159,18 @@
     const STORAGE_KEY_HISTORY = 'scanner_plate_history';
 
     // History tracking: Map of location -> license plate
-    // Example: { "NORTH-01": "ABC123", "NORTH-02": "XYZ789", "SOUTH-15": "DEF456" }
     let plateHistory = {};
 
-    // Load plate history from localStorage
     function loadPlateHistory() {
         try {
             const stored = localStorage.getItem(STORAGE_KEY_HISTORY);
-            if (stored) {
-                plateHistory = JSON.parse(stored);
-            }
+            if (stored) plateHistory = JSON.parse(stored);
         } catch (err) {
             console.warn('Failed to load plate history', err);
             plateHistory = {};
         }
     }
 
-    // Save plate history to localStorage
     function savePlateHistory() {
         try {
             localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(plateHistory));
@@ -721,56 +179,42 @@
         }
     }
 
-    // Store a plate for a specific location
     function storePlateForLocation(location, plate) {
         plateHistory[location] = plate;
         savePlateHistory();
     }
 
-    // Get the stored plate for a specific location
     function getPlateForLocation(location) {
         return plateHistory[location] || null;
     }
 
-    // Known plates + Awesomplete for license plate
+    // Known plates + Awesomplete
     let knownPlatesSet = new Set();
     let awesomplete = null;
-
-    // Track which plates belong to residents vs outsiders
     let residentPlatesSet = new Set();
     let outsiderPlatesSet = new Set();
 
-    // Load plate history on page load
     loadPlateHistory();
 
     async function loadKnownPlates() {
         try {
             const res = await fetch('/plates/known', { headers: getAuthHeaders() });
-            if (!res.ok) {
-                console.warn('Failed to load known plates', res.status);
-                return;
-            }
+            if (!res.ok) return;
             const data = await res.json();
 
-            // data can be either ["ABC123", ...] (backward compatible)
-            // or an object { residents: [...], outsiders: [...] }
             let allPlatesUpper = [];
             residentPlatesSet = new Set();
             outsiderPlatesSet = new Set();
 
             if (Array.isArray(data)) {
-                // Older/simple format: we don't know which are outsiders, so treat all as generic known plates
                 allPlatesUpper = data.map(p => p.toUpperCase());
             } else if (data && (Array.isArray(data.residents) || Array.isArray(data.outsiders))) {
                 const residentUpper = (data.residents || []).map(p => p.toUpperCase());
                 const outsiderUpper = (data.outsiders || []).map(p => p.toUpperCase());
-
                 residentUpper.forEach(p => residentPlatesSet.add(p));
                 outsiderUpper.forEach(p => outsiderPlatesSet.add(p));
-
                 allPlatesUpper = Array.from(new Set([...residentUpper, ...outsiderUpper]));
             } else {
-                console.warn('Unexpected known plates payload', data);
                 return;
             }
 
@@ -787,8 +231,6 @@
                 } else {
                     awesomplete.list = allPlatesUpper;
                 }
-            } else {
-                console.warn('Awesomplete not available yet');
             }
         } catch (err) {
             console.warn('Error loading known plates', err);
@@ -796,7 +238,6 @@
     }
 
     function loadStoredIndexForSide(side) {
-        if (!window.localStorage) return null;
         const key = side === 'NORTH' ? STORAGE_KEY_NORTH : STORAGE_KEY_SOUTH;
         const raw = localStorage.getItem(key);
         if (!raw) return null;
@@ -805,7 +246,6 @@
     }
 
     function storeIndexForSide(side, index) {
-        if (!window.localStorage) return;
         const key = side === 'NORTH' ? STORAGE_KEY_NORTH : STORAGE_KEY_SOUTH;
         localStorage.setItem(key, String(index));
     }
@@ -828,56 +268,49 @@
     function updatePlateStatus(plate) {
         if (!plate) {
             plateStatusEl.textContent = '';
-            plateStatusEl.style.color = '#4b5563';
             return;
         }
-
         const upper = plate.toUpperCase();
         if (residentPlatesSet.has(upper)) {
-            plateStatusEl.textContent = '✅ Known resident license plate';
-            plateStatusEl.style.color = '#15803d';
+            plateStatusEl.textContent = 'Known resident license plate';
+            plateStatusEl.className = 'text-xs mt-1 h-4 text-emerald-600 font-medium';
         } else if (outsiderPlatesSet.has(upper)) {
-            plateStatusEl.textContent = '🚗 Previously seen outsider plate';
-            plateStatusEl.style.color = '#1d4ed8';
+            plateStatusEl.textContent = 'Previously seen outsider plate';
+            plateStatusEl.className = 'text-xs mt-1 h-4 text-indigo-600 font-medium';
         } else {
-            plateStatusEl.textContent = '🚗 Not registered (will be treated as outsider)';
-            plateStatusEl.style.color = '#b45309';
+            plateStatusEl.textContent = 'Not registered (will be treated as outsider)';
+            plateStatusEl.className = 'text-xs mt-1 h-4 text-amber-600 font-medium';
         }
     }
 
-    // Slot label and navigation
     function formatSlotLabel(side, index) {
-        const num = String(index).padStart(2, '0');
-        return `${side}-${num}`;
+        return `${side}-${String(index).padStart(2, '0')}`;
     }
 
     function updateSlotUI() {
         if (!selectedSide) {
-            slotRow.style.display = 'none';
+            slotRow.classList.add('hidden');
             return;
         }
-        slotRow.style.display = 'flex';
+        slotRow.classList.remove('hidden');
 
         const location = getCurrentLocation();
         const storedPlate = getPlateForLocation(location);
 
-        // Add indicator if this slot has been scanned before
-        const indicator = storedPlate ? ' ✓' : '';
+        const indicator = storedPlate ? ' \u2713' : '';
         slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex) + indicator;
 
-        // Change color if already scanned
         if (storedPlate) {
-            slotLabelEl.style.color = '#15803d';
+            slotLabelEl.classList.remove('text-slate-800');
+            slotLabelEl.classList.add('text-emerald-600');
         } else {
-            slotLabelEl.style.color = '#111827';
+            slotLabelEl.classList.remove('text-emerald-600');
+            slotLabelEl.classList.add('text-slate-800');
         }
 
-        // Prev is disabled on the first spot
         slotPrevBtn.disabled = currentIndex <= 1;
-        // Next is never disabled (you can keep going forward as needed)
         slotNextBtn.disabled = false;
 
-        // Update spot adjustment buttons if they exist (initialized later in the code)
         const spotDecBtn = document.getElementById('spot-dec');
         const spotIncBtn = document.getElementById('spot-inc');
         if (spotDecBtn && spotIncBtn) {
@@ -885,21 +318,11 @@
             spotIncBtn.disabled = false;
         }
 
-        // Pre-fill license plate if there's history for this slot
         if (storedPlate) {
             licensePlateInput.value = storedPlate;
             updatePlateStatus(storedPlate);
-            messageEl.textContent = '📝 Previous entry loaded';
-            messageEl.className = 'message';
-            messageEl.style.color = '#2563eb';
-            // Clear message after 2 seconds
-            setTimeout(() => {
-                if (messageEl.textContent === '📝 Previous entry loaded') {
-                    messageEl.textContent = '';
-                }
-            }, 2000);
+            showToast('Previous entry loaded', 'info', 2000);
         } else {
-            // Clear the input if no history
             if (licensePlateInput.value) {
                 licensePlateInput.value = '';
                 updatePlateStatus('');
@@ -922,186 +345,140 @@
     function goNextSlot() {
         currentIndex++;
         updateSlotUI();
-        // Persist new index for this side
-        if (selectedSide) {
-            storeIndexForSide(selectedSide, currentIndex);
-        }
+        if (selectedSide) storeIndexForSide(selectedSide, currentIndex);
     }
 
     slotPrevBtn.addEventListener('click', () => {
         goPrevSlot();
-        if (selectedSide) {
-            storeIndexForSide(selectedSide, currentIndex);
-        }
+        if (selectedSide) storeIndexForSide(selectedSide, currentIndex);
     });
     slotNextBtn.addEventListener('click', goNextSlot);
 
-    // Spot adjustment buttons - only change the spot number, don't affect anything else
+    // Spot adjustment buttons
     const spotDecBtn = document.getElementById('spot-dec');
     const spotIncBtn = document.getElementById('spot-inc');
 
     function updateSpotOnly() {
         if (!selectedSide) return;
-
-        // Update just the label, don't load history or clear input
         const location = getCurrentLocation();
         const storedPlate = getPlateForLocation(location);
-        const indicator = storedPlate ? ' ✓' : '';
+        const indicator = storedPlate ? ' \u2713' : '';
         slotLabelEl.textContent = formatSlotLabel(selectedSide, currentIndex) + indicator;
 
         if (storedPlate) {
-            slotLabelEl.style.color = '#15803d';
+            slotLabelEl.classList.remove('text-slate-800');
+            slotLabelEl.classList.add('text-emerald-600');
         } else {
-            slotLabelEl.style.color = '#111827';
+            slotLabelEl.classList.remove('text-emerald-600');
+            slotLabelEl.classList.add('text-slate-800');
         }
 
-        // Update button states
         spotDecBtn.disabled = currentIndex <= 1;
         spotIncBtn.disabled = false;
     }
 
     spotDecBtn.addEventListener('click', () => {
-        if (currentIndex > 1) {
-            currentIndex--;
-            updateSpotOnly();
-        }
+        if (currentIndex > 1) { currentIndex--; updateSpotOnly(); }
     });
-
     spotIncBtn.addEventListener('click', () => {
         currentIndex++;
         updateSpotOnly();
     });
 
-    // Clear history button
-    const clearHistoryBtn = document.getElementById('clear-history-btn');
-    clearHistoryBtn.addEventListener('click', () => {
+    // Clear history
+    document.getElementById('clear-history-btn').addEventListener('click', () => {
         if (confirm('Are you sure you want to clear all saved license plate entries? This cannot be undone.')) {
             plateHistory = {};
             savePlateHistory();
             updateSlotUI();
-            messageEl.textContent = '🗑️ History cleared';
-            messageEl.className = 'message';
-            messageEl.style.color = '#dc2626';
-            setTimeout(() => {
-                if (messageEl.textContent === '🗑️ History cleared') {
-                    messageEl.textContent = '';
-                }
-            }, 2000);
+            showToast('History cleared', 'warning', 2500);
         }
     });
 
+    // Change side button
     changeSideBtn.addEventListener('click', () => {
-        // Show the overlay again so user can switch side; keep previously selected side in dropdown
-        sideOverlay.classList.remove('hidden');
-        if (selectedSide) {
-            sideSelect.value = selectedSide;
-        }
+        sideOverlay.classList.add('show');
+        if (selectedSide) sideSelect.value = selectedSide;
     });
 
-    // Close button on side selection popup
+    // Close side dialog
     sideCloseBtn.addEventListener('click', () => {
-        sideOverlay.classList.add('hidden');
+        sideOverlay.classList.remove('show');
     });
 
-    // Wire side selection overlay
+    // Confirm side selection
     sideConfirmBtn.addEventListener('click', () => {
         const value = sideSelect.value;
         if (!value) {
-            alert('Please select a side (North or South).');
+            showToast('Please select a side (North or South)', 'warning');
             return;
         }
-        selectedSide = value; // "NORTH" or "SOUTH"
-
-        // Try to restore last used index for this side, then continue from last+1
+        selectedSide = value;
         const stored = loadStoredIndexForSide(selectedSide);
-        if (stored && stored > 0) {
-            currentIndex = stored + 1;
-        } else {
-            currentIndex = 1;
-        }
-
+        currentIndex = (stored && stored > 0) ? stored + 1 : 1;
         updateSlotUI();
-        sideOverlay.classList.add('hidden');
+        sideOverlay.classList.remove('show');
     });
 
-    // Ensure user selects a side before scanning
     function ensureSideSelected() {
         if (!selectedSide) {
-            alert('Please select parking side (North or South) first.');
-            sideOverlay.classList.remove('hidden');
+            showToast('Please select parking side first', 'warning');
+            sideOverlay.classList.add('show');
             return false;
         }
         return true;
     }
 
-    // Tüm sayfa + Awesomplete yüklendikten sonra plakaları çek
+    // Initialize on load
     window.addEventListener('load', loadKnownPlates);
 
-    // Sayfa açıldığında sessionName boşsa, current period + tarih ile doldur
     window.addEventListener('load', () => {
         if (!sessionInput.value.trim()) {
-            const period = getCurrentPeriod();
-            sessionInput.value = buildSessionName(period);
+            sessionInput.value = buildSessionName(getCurrentPeriod());
         }
 
-        const chips = document.querySelectorAll('.session-chip[data-period]');
-        chips.forEach(chip => {
+        document.querySelectorAll('.session-chip[data-period]').forEach(chip => {
             chip.addEventListener('click', () => {
-                const period = chip.dataset.period;
-                sessionInput.value = buildSessionName(period);
+                sessionInput.value = buildSessionName(chip.dataset.period);
             });
         });
 
         const autoBtn = document.getElementById('session-today-auto');
         if (autoBtn) {
             autoBtn.addEventListener('click', () => {
-                const period = getCurrentPeriod();
-                sessionInput.value = buildSessionName(period);
+                sessionInput.value = buildSessionName(getCurrentPeriod());
             });
         }
 
         sessionInput.addEventListener('focus', () => {
-            sessionSuggestions.classList.add('visible');
+            sessionSuggestions.classList.remove('hidden');
+            sessionSuggestions.classList.add('flex');
         });
 
         sessionInput.addEventListener('blur', () => {
             setTimeout(() => {
-                sessionSuggestions.classList.remove('visible');
+                sessionSuggestions.classList.add('hidden');
+                sessionSuggestions.classList.remove('flex');
             }, 150);
         });
     });
 
-    // Input yazıldıkça status güncelle
-    licensePlateInput.addEventListener('input', () => {
-        const plate = licensePlateInput.value.trim();
-        updatePlateStatus(plate);
-    });
-
-    // Ensure submit button is visible when license plate input is focused
+    // Plate status updates
+    licensePlateInput.addEventListener('input', () => updatePlateStatus(licensePlateInput.value.trim()));
     licensePlateInput.addEventListener('focus', () => {
-        setTimeout(() => {
-            submitBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 300);
+        setTimeout(() => submitBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 300);
     });
-
     licensePlateInput.addEventListener('awesomplete-selectcomplete', (e) => {
         const selected = e.text && e.text.value ? e.text.value : licensePlateInput.value.trim();
         updatePlateStatus(selected);
     });
+    licensePlateInput.addEventListener('change', () => updatePlateStatus(licensePlateInput.value.trim()));
 
-    licensePlateInput.addEventListener('change', () => {
-        const plate = licensePlateInput.value.trim();
-        updatePlateStatus(plate);
-    });
-
+    // Form submit
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        messageEl.textContent = '';
-        messageEl.className = 'message';
 
-        if (!ensureSideSelected()) {
-            return;
-        }
+        if (!ensureSideSelected()) return;
 
         const sessionName = sessionInput.value.trim();
         const licensePlate = licensePlateInput.value.trim().toUpperCase();
@@ -1110,20 +487,17 @@
         updatePlateStatus(licensePlate);
 
         if (!licensePlate) {
-            messageEl.textContent = 'Please fill in license plate.';
-            messageEl.classList.add('error');
+            showToast('Please fill in license plate', 'warning');
             return;
         }
 
         const locationValue = getCurrentLocation();
         if (!locationValue && !noParking) {
-            messageEl.textContent = 'Location is not ready. Please select side again.';
-            messageEl.classList.add('error');
+            showToast('Location is not ready. Please select side again.', 'error');
             return;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Sending...';
+        setBtnLoading(submitBtn, true, 'Sending...');
 
         try {
             const body = {
@@ -1140,36 +514,22 @@
             });
 
             if (response.ok) {
-                // Store the license plate in history before clearing
-                if (locationValue) {
-                    storePlateForLocation(locationValue, licensePlate);
-                }
+                if (locationValue) storePlateForLocation(locationValue, licensePlate);
 
-                messageEl.textContent = 'Saved ✅';
-                messageEl.classList.add('success');
+                showToast('Saved successfully', 'success');
                 licensePlateInput.value = '';
                 updatePlateStatus('');
                 noParkingCheckbox.checked = false;
 
-                // Persist the index that was just used for this scan
-                if (selectedSide) {
-                    storeIndexForSide(selectedSide, currentIndex);
-                }
-
-                // Automatically advance to next spot after a successful scan
-                if (!noParking) {
-                    goNextSlot();
-                }
+                if (selectedSide) storeIndexForSide(selectedSide, currentIndex);
+                if (!noParking) goNextSlot();
             } else {
-                messageEl.textContent = 'Error: ' + response.status;
-                messageEl.classList.add('error');
+                showToast('Error: ' + response.status, 'error');
             }
         } catch (err) {
-            messageEl.textContent = 'Network error: ' + err.message;
-            messageEl.classList.add('error');
+            showToast('Network error: ' + err.message, 'error');
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit';
+            setBtnLoading(submitBtn, false, 'Submit');
         }
     });
 </script>

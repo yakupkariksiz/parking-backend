@@ -2,494 +2,90 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Residents & Plates</title>
+    <title>Residents – Parking Scanner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <style>
-        body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* User header bar */
-        .user-header {
-            background: #1e293b;
-            color: white;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-
-        .user-header .app-name {
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            color: white;
-        }
-
-        .user-header .app-name:hover {
-            color: #94a3b8;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        /* Dropdown Menu */
-        .nav-dropdown {
-            position: relative;
-        }
-
-        .nav-dropdown-btn {
-            background: #334155;
-            border: none;
-            color: white;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .nav-dropdown-btn:hover {
-            background: #475569;
-        }
-
-        .nav-dropdown-content {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 100%;
-            margin-top: 8px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            min-width: 200px;
-            z-index: 100;
-            overflow: hidden;
-        }
-
-        .nav-dropdown-content.show {
-            display: block;
-        }
-
-        .nav-dropdown-content a {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            color: #1e293b;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: background 0.15s;
-        }
-
-        .nav-dropdown-content a:hover {
-            background: #f1f5f9;
-        }
-
-        .nav-dropdown-content a.active {
-            background: #eff6ff;
-            color: #2563eb;
-            font-weight: 500;
-        }
-
-        .nav-dropdown-content .divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 4px 0;
-        }
-
-        .nav-dropdown-content .menu-icon {
-            width: 18px;
-            text-align: center;
-        }
-
-        .nav-dropdown-content .admin-badge {
-            font-size: 0.65rem;
-            background: #fef3c7;
-            color: #92400e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-left: auto;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-info img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 2px solid #4ade80;
-        }
-
-        .user-info .user-details {
-            text-align: right;
-        }
-
-        .user-info .user-name {
-            font-weight: 500;
-        }
-
-        .user-info .user-role {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #ffffff;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-        }
-
-        h1 {
-            font-size: 1.6rem;
-            margin-top: 0;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .subtitle {
-            text-align: center;
-            font-size: 0.9rem;
-            color: #555;
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-            box-sizing: border-box;
-            margin-bottom: 16px;
-        }
-
-        textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        button {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        button.primary {
-            width: 100%;
-            background: #16a34a;
-            color: white;
-        }
-
-        button.primary:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
-
-        button.danger {
-            background: #dc2626;
-            color: white;
-        }
-
-        button.secondary {
-            background: #e5e7eb;
-            color: #111827;
-        }
-
-        button.export-btn {
-            background: #059669;
-            color: white;
-        }
-
-        button.export-btn:hover {
-            background: #047857;
-        }
-
-        button.export-btn:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
-
-        .message {
-            margin-top: 16px;
-            text-align: center;
-            font-size: 0.95rem;
-        }
-
-        .message.success {
-            color: #15803d;
-        }
-
-        .message.error {
-            color: #b91c1c;
-        }
-
-        h2 {
-            margin-top: 32px;
-            margin-bottom: 12px;
-            font-size: 1.2rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-
-        th, td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #e5e7eb;
-            text-align: left;
-            vertical-align: top;
-        }
-
-        th {
-            background: #f9fafb;
-            font-weight: 600;
-        }
-
-        tr:nth-child(even) {
-            background: #f9fafb;
-        }
-
-        .plates-cell {
-            white-space: pre-line;
-            font-family: monospace;
-        }
-
-        .nav {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.9rem;
-        }
-
-        .nav a {
-            color: #2563eb;
-            text-decoration: none;
-        }
-
-        .nav a:hover {
-            text-decoration: underline;
-        }
-
-        .actions {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 999px;
-            font-size: 0.7rem;
-            background: #e5e7eb;
-            color: #374151;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 12px;
-            font-size: 0.85rem;
-            flex-wrap: wrap;
-        }
-
-        .pagination button {
-            padding: 6px 10px;
-            font-size: 0.8rem;
-        }
-
-        .pagination .page-info {
-            color: #4b5563;
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
-    </style>
-</head>
-<body>
-
-<!-- User header bar -->
-<div class="user-header">
-    <a href="/dashboard.html" class="app-name">🚗 Parking Scanner</a>
-    <div class="header-right">
-        <div class="nav-dropdown">
-            <button class="nav-dropdown-btn" id="nav-dropdown-btn">
-                <span>☰</span> Menu
-            </button>
-            <div class="nav-dropdown-content" id="nav-dropdown-content">
-                <a href="/dashboard.html"><span class="menu-icon">🏠</span> Dashboard</a>
-                <a href="/index.html"><span class="menu-icon">📷</span> Scan Plates</a>
-                <div class="divider"></div>
-                <a href="/residents.html" class="active"><span class="menu-icon">👥</span> Residents</a>
-                <a href="/stats.html"><span class="menu-icon">📊</span> Session Stats</a>
-                <a href="/occupancy.html"><span class="menu-icon">📈</span> Occupancy Chart</a>
-                <div class="divider"></div>
-                <a href="/users.html"><span class="menu-icon">👤</span> User Management <span class="admin-badge">Admin</span></a>
-                <div class="divider"></div>
-                <a href="#" onclick="logout(); return false;"><span class="menu-icon">🚪</span> Logout</a>
-            </div>
-        </div>
-        <div class="user-info" id="user-info">
-            <div class="user-details">
-                <div class="user-name" id="user-name">Loading...</div>
-                <div class="user-role" id="user-role"></div>
-            </div>
-            <img id="user-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E" alt="User avatar" />
-        </div>
-    </div>
-</div>
-
-<div class="container">
-    <h1>Residents</h1>
-    <div class="subtitle">
-        Map resident <strong>unique code</strong> to one or more <strong>license plates</strong>.
-    </div>
-
-    <form id="resident-form">
-        <label for="uniqueCode">Resident unique code</label>
-        <input
-                type="text"
-                id="uniqueCode"
-                name="uniqueCode"
-                placeholder="RES-001"
-                required
-        >
-
-        <label for="plates">License plates (comma or newline separated)</label>
-        <textarea
-                id="plates"
-                name="plates"
-                placeholder="HHL32H, AA11BB, CC22DD&#10;or one plate per line"
-                required
-        ></textarea>
-
-        <button type="submit" id="submit-btn" class="primary">Save mapping</button>
-    </form>
-
-    <div id="message" class="message"></div>
-
-    <h2>Existing residents</h2>
-    <div id="residentsContainer">Loading...</div>
-    <div id="pagination" class="pagination" style="display:none;">
-        <button id="prevPage">Previous</button>
-        <button id="allPage">All</button>
-        <button id="nextPage">Next</button>
-        <button id="deleteSelected" class="danger">Delete selected</button>
-        <button id="exportExcel" class="export-btn">📥 Export Excel</button>
-        <span class="page-info" id="pageInfo"></span>
-    </div>
-
-
-    <div class="nav">
-        <a href="/dashboard.html">← Dashboard</a> ·
-        <a href="/index.html">Scan Page</a> ·
-        <a href="/stats.html">Session stats</a>
-    </div>
-</div>
-
-<script>
-    // --- JWT Auth Helpers ---
-    function getToken() { return localStorage.getItem('jwt_token'); }
-    function getAuthHeaders(extra) {
-        const headers = { 'Authorization': 'Bearer ' + getToken() };
-        if (extra) Object.assign(headers, extra);
-        return headers;
-    }
-    function logout() {
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('jwt_username');
-        localStorage.removeItem('jwt_role');
-        window.location.href = '/login.html?logout';
-    }
-    function checkAuth(res) {
-        if (res.status === 401 || res.status === 403) {
-            logout();
-            return false;
-        }
-        return true;
-    }
-    if (!getToken()) { window.location.href = '/login.html'; }
-
-    // Admin-only page: redirect non-admins to dashboard
-    const storedRole = localStorage.getItem('jwt_role');
-    if (storedRole !== 'ROLE_ADMIN') {
-        window.location.href = '/dashboard.html';
-    }
-
-    // Dropdown menu toggle
-    const navDropdownBtn = document.getElementById('nav-dropdown-btn');
-    const navDropdownContent = document.getElementById('nav-dropdown-content');
-    navDropdownBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        navDropdownContent.classList.toggle('show');
-    });
-    document.addEventListener('click', () => {
-        navDropdownContent.classList.remove('show');
-    });
-
-    // User info elements
-    const userNameEl = document.getElementById('user-name');
-    const userRoleEl = document.getElementById('user-role');
-    const userAvatarEl = document.getElementById('user-avatar');
-
-    // Fetch and display current user
-    async function loadCurrentUser() {
-        try {
-            const res = await fetch('/api/user/me', { headers: getAuthHeaders() });
-            if (!checkAuth(res)) return;
-            if (res.ok) {
-                const user = await res.json();
-                if (user.authenticated) {
-                    userNameEl.textContent = user.name || 'User';
-                    userRoleEl.textContent = user.role === 'ROLE_ADMIN' ? 'Admin' : 'User';
-
-                    // Server-side role check: redirect non-admins
-                    if (user.role !== 'ROLE_ADMIN') {
-                        window.location.href = '/dashboard.html';
-                        return;
-                    }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
                 }
             }
-        } catch (err) {
-            console.warn('Failed to load user info', err);
         }
-    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/common.css">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+
+<!-- Main content -->
+<main class="max-w-4xl mx-auto px-4 sm:px-6 pt-8 pb-16 page-fade-in">
+
+    <!-- Page header -->
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-slate-800">Residents</h1>
+        <p class="text-sm text-slate-500 mt-1">Map resident <strong>unique codes</strong> to one or more <strong>license plates</strong>.</p>
+    </div>
+
+    <!-- Add/edit form -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-5 sm:p-6 mb-6">
+        <form id="resident-form" class="space-y-4">
+            <div>
+                <label for="uniqueCode" class="block text-sm font-semibold text-slate-700 mb-1.5">Resident unique code</label>
+                <input type="text" id="uniqueCode" name="uniqueCode" placeholder="RES-001" required class="form-input" />
+            </div>
+            <div>
+                <label for="plates" class="block text-sm font-semibold text-slate-700 mb-1.5">License plates (comma or newline separated)</label>
+                <textarea id="plates" name="plates" placeholder="HHL32H, AA11BB, CC22DD&#10;or one plate per line" required class="form-input min-h-[80px] resize-y"></textarea>
+            </div>
+            <button type="submit" id="submit-btn" class="btn-success w-full btn-press">Save mapping</button>
+        </form>
+    </div>
+
+    <!-- Residents table section -->
+    <div class="bg-white rounded-xl border border-slate-200/80 overflow-hidden">
+        <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+            <h2 class="text-base font-semibold text-slate-800">Existing residents</h2>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button id="deleteSelected" class="btn-danger btn-press text-xs" disabled>Delete selected</button>
+                <button id="exportExcel" class="btn-secondary btn-press text-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Export Excel
+                </button>
+            </div>
+        </div>
+
+        <div id="residentsContainer" class="p-5 sm:p-6">
+            <div class="flex items-center justify-center gap-3 py-8 text-slate-400">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span class="text-sm">Loading residents...</span>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div id="pagination" class="hidden px-5 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-center gap-2 flex-wrap text-sm">
+            <button id="prevPage" class="btn-ghost text-xs disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
+            <span class="text-xs text-slate-500" id="pageInfo"></span>
+            <button id="nextPage" class="btn-ghost text-xs disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+            <button id="allPage" class="btn-ghost text-xs text-indigo-600">Show All</button>
+        </div>
+    </div>
+
+</main>
+
+<script src="/common.js"></script>
+<script>
+    requireAuth();
+    requireAdmin();
+    renderNavDrawer('residents');
     loadCurrentUser();
 
     const form = document.getElementById('resident-form');
-    const messageEl = document.getElementById('message');
     const submitBtn = document.getElementById('submit-btn');
     const residentsContainer = document.getElementById('residentsContainer');
 
@@ -506,21 +102,18 @@
 
     let allResidents = [];
     let currentPage = 1;
-    const pageSize = 10; // normal sayfa boyutu
-    let showAll = false; // "All" modu
-    let selectedIds = new Set(); // toplu silme için seçili resident id'leri
+    const pageSize = 10;
+    let showAll = false;
+    let selectedIds = new Set();
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        messageEl.textContent = '';
-        messageEl.className = 'message';
 
         const uniqueCode = uniqueCodeInput.value.trim();
         const rawPlates = platesInput.value;
 
         if (!uniqueCode || !rawPlates.trim()) {
-            messageEl.textContent = 'Please fill in both fields.';
-            messageEl.classList.add('error');
+            showToast('Please fill in both fields', 'warning');
             return;
         }
 
@@ -530,13 +123,11 @@
             .filter(p => p.length > 0);
 
         if (licensePlates.length === 0) {
-            messageEl.textContent = 'Please enter at least one valid plate.';
-            messageEl.classList.add('error');
+            showToast('Please enter at least one valid plate', 'warning');
             return;
         }
 
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Saving...';
+        setBtnLoading(submitBtn, true, 'Saving...');
 
         try {
             const response = await fetch(`/residents/${encodeURIComponent(uniqueCode)}/plates`, {
@@ -546,26 +137,22 @@
             });
 
             if (response.ok) {
-                messageEl.textContent = 'Resident mapping saved ✅ (list refreshed)';
-                messageEl.classList.add('success');
+                showToast('Resident mapping saved', 'success');
                 platesInput.value = '';
                 await loadResidents();
             } else {
-                messageEl.textContent = 'Error: ' + response.status;
-                messageEl.classList.add('error');
+                showToast('Error: ' + response.status, 'error');
             }
         } catch (err) {
-            messageEl.textContent = 'Network error: ' + err.message;
-            messageEl.classList.add('error');
+            showToast('Network error: ' + err.message, 'error');
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Save mapping';
+            setBtnLoading(submitBtn, false, 'Save mapping');
         }
     });
 
     async function loadResidents() {
-        residentsContainer.textContent = 'Loading...';
-        paginationEl.style.display = 'none';
+        showSpinner(residentsContainer, 'Loading residents...');
+        paginationEl.classList.add('hidden');
         showAll = false;
         currentPage = 1;
         selectedIds.clear();
@@ -573,21 +160,21 @@
 
         try {
             const response = await fetch('/residents', { headers: getAuthHeaders() });
+            if (!checkAuth(response)) return;
             if (!response.ok) {
-                residentsContainer.textContent = 'Error loading residents: ' + response.status;
+                residentsContainer.innerHTML = `<p class="text-sm text-rose-500 text-center py-4">Error loading residents: ${response.status}</p>`;
                 return;
             }
 
-            const residents = await response.json();
-            allResidents = residents;
+            allResidents = await response.json();
             if (allResidents.length === 0) {
-                residentsContainer.textContent = 'No residents yet.';
+                residentsContainer.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">No residents yet.</p>';
                 return;
             }
 
             renderResidentsPage();
         } catch (err) {
-            residentsContainer.textContent = 'Network error: ' + err.message;
+            residentsContainer.innerHTML = `<p class="text-sm text-rose-500 text-center py-4">Network error: ${err.message}</p>`;
         }
     }
 
@@ -595,15 +182,13 @@
         residentsContainer.innerHTML = '';
 
         const total = allResidents.length;
-
         if (total === 0) {
-            residentsContainer.textContent = 'No residents yet.';
-            paginationEl.style.display = 'none';
+            residentsContainer.innerHTML = '<p class="text-sm text-slate-400 text-center py-8">No residents yet.</p>';
+            paginationEl.classList.add('hidden');
             return;
         }
 
-        let pageItems;
-        let totalPages;
+        let pageItems, totalPages;
 
         if (showAll) {
             pageItems = allResidents;
@@ -611,29 +196,25 @@
             currentPage = 1;
         } else {
             totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-            if (currentPage > totalPages) {
-                currentPage = totalPages;
-            }
-            if (currentPage < 1) {
-                currentPage = 1;
-            }
-
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
             const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = startIndex + pageSize;
-            pageItems = allResidents.slice(startIndex, endIndex);
+            pageItems = allResidents.slice(startIndex, startIndex + pageSize);
         }
 
+        // Build table
+        const wrapper = document.createElement('div');
+        wrapper.className = 'overflow-x-auto -mx-5 sm:-mx-6';
+
         const table = document.createElement('table');
+        table.className = 'data-table';
 
         const thead = document.createElement('thead');
         thead.innerHTML = `
             <tr>
-                <th style="width:40px;">
-                    <input type="checkbox" id="selectAll">
-                </th>
-                <th>Unique code</th>
-                <th>Plates</th>
+                <th class="w-10 text-center"><input type="checkbox" id="selectAll" class="rounded border-slate-300 cursor-pointer"></th>
+                <th>Code</th>
+                <th>License Plates</th>
                 <th>Actions</th>
             </tr>
         `;
@@ -644,78 +225,71 @@
         pageItems.forEach(r => {
             const tr = document.createElement('tr');
 
-            // checkbox kolonu
+            // Checkbox
             const tdSelect = document.createElement('td');
+            tdSelect.className = 'text-center';
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
+            checkbox.className = 'rounded border-slate-300 cursor-pointer';
             checkbox.dataset.residentId = r.id;
             checkbox.checked = selectedIds.has(r.id);
             checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    selectedIds.add(r.id);
-                } else {
-                    selectedIds.delete(r.id);
-                }
+                if (e.target.checked) selectedIds.add(r.id);
+                else selectedIds.delete(r.id);
                 updateDeleteSelectedButton();
-                // selectAll durumunu güncellemek için başlığı tekrar ayarlayacağız
-                const selectAllCheckbox = table.querySelector('#selectAll');
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = pageItems.every(item => selectedIds.has(item.id));
-                }
+                const selectAllCb = table.querySelector('#selectAll');
+                if (selectAllCb) selectAllCb.checked = pageItems.every(item => selectedIds.has(item.id));
             });
             tdSelect.appendChild(checkbox);
             tr.appendChild(tdSelect);
 
+            // Code
             const tdCode = document.createElement('td');
-            tdCode.innerHTML = `<span class="tag">${r.uniqueCode}</span>`;
+            tdCode.innerHTML = `<span class="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold font-mono">${r.uniqueCode}</span>`;
             tr.appendChild(tdCode);
 
+            // Plates
             const tdPlates = document.createElement('td');
-            tdPlates.classList.add('plates-cell');
-            tdPlates.textContent = (r.licensePlates && r.licensePlates.length > 0)
-                ? r.licensePlates.join('\n')
-                : '';
+            const platesHtml = (r.licensePlates && r.licensePlates.length > 0)
+                ? r.licensePlates.map(p => `<span class="inline-block px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-xs font-mono mr-1 mb-1">${p}</span>`).join('')
+                : '<span class="text-slate-300 text-xs">None</span>';
+            tdPlates.innerHTML = platesHtml;
             tr.appendChild(tdPlates);
 
+            // Actions
             const tdActions = document.createElement('td');
-            tdActions.classList.add('actions');
+            tdActions.className = 'whitespace-nowrap';
 
             const editBtn = document.createElement('button');
+            editBtn.className = 'btn-ghost text-xs text-indigo-600 hover:text-indigo-800';
             editBtn.textContent = 'Edit';
-            editBtn.classList.add('secondary');
             editBtn.addEventListener('click', () => {
                 uniqueCodeInput.value = r.uniqueCode;
                 platesInput.value = (r.licensePlates || []).join('\n');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
-                messageEl.textContent = 'Editing resident ' + r.uniqueCode;
-                messageEl.className = 'message';
+                showToast('Editing resident ' + r.uniqueCode, 'info', 2000);
             });
             tdActions.appendChild(editBtn);
 
             const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-ghost text-xs text-rose-600 hover:text-rose-800';
             deleteBtn.textContent = 'Delete';
-            deleteBtn.classList.add('danger');
             deleteBtn.addEventListener('click', async () => {
-                if (!confirm(`Delete resident ${r.uniqueCode} and all its plates?`)) {
-                    return;
-                }
+                if (!confirm(`Delete resident ${r.uniqueCode} and all its plates?`)) return;
                 try {
                     const delRes = await fetch(`/residents/${r.id}`, {
                         method: 'DELETE',
                         headers: getAuthHeaders()
                     });
                     if (delRes.ok || delRes.status === 204) {
-                        messageEl.textContent = 'Resident deleted ✅';
-                        messageEl.className = 'message success';
+                        showToast('Resident deleted', 'success');
                         selectedIds.delete(r.id);
                         await loadResidents();
                     } else {
-                        messageEl.textContent = 'Error deleting resident: ' + delRes.status;
-                        messageEl.className = 'message error';
+                        showToast('Error deleting resident: ' + delRes.status, 'error');
                     }
                 } catch (err) {
-                    messageEl.textContent = 'Network error: ' + err.message;
-                    messageEl.className = 'message error';
+                    showToast('Network error: ' + err.message, 'error');
                 }
             });
             tdActions.appendChild(deleteBtn);
@@ -725,33 +299,27 @@
         });
 
         table.appendChild(tbody);
-        residentsContainer.appendChild(table);
+        wrapper.appendChild(table);
+        residentsContainer.appendChild(wrapper);
 
-        // selectAll checkbox davranışı
-        const selectAllCheckbox = table.querySelector('#selectAll');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.checked = pageItems.every(item => selectedIds.has(item.id));
-            selectAllCheckbox.addEventListener('change', (e) => {
-                const checked = e.target.checked;
+        // Select all checkbox behavior
+        const selectAllCb = table.querySelector('#selectAll');
+        if (selectAllCb) {
+            selectAllCb.checked = pageItems.every(item => selectedIds.has(item.id));
+            selectAllCb.addEventListener('change', (e) => {
                 pageItems.forEach(r => {
-                    if (checked) {
-                        selectedIds.add(r.id);
-                    } else {
-                        selectedIds.delete(r.id);
-                    }
+                    if (e.target.checked) selectedIds.add(r.id);
+                    else selectedIds.delete(r.id);
                 });
-                // satırlardaki tek tek checkbox'ları güncelle
-                const rowCheckboxes = table.querySelectorAll('input[type="checkbox"][data-resident-id]');
-                rowCheckboxes.forEach(cb => {
-                    const id = Number(cb.dataset.residentId);
-                    cb.checked = selectedIds.has(id);
+                table.querySelectorAll('input[type="checkbox"][data-resident-id]').forEach(cb => {
+                    cb.checked = selectedIds.has(Number(cb.dataset.residentId));
                 });
                 updateDeleteSelectedButton();
             });
         }
 
-        // pagination controls
-        paginationEl.style.display = 'flex';
+        // Pagination controls
+        paginationEl.classList.remove('hidden');
 
         if (showAll) {
             pageInfoEl.textContent = `All (${total} residents)`;
@@ -759,8 +327,7 @@
             nextPageBtn.disabled = true;
             allPageBtn.disabled = true;
         } else {
-            const totalPages = Math.max(1, Math.ceil(total / pageSize));
-            pageInfoEl.textContent = `Page ${currentPage} of ${totalPages} (total ${total} residents)`;
+            pageInfoEl.textContent = `Page ${currentPage} of ${totalPages} \u00b7 ${total} residents`;
             prevPageBtn.disabled = currentPage === 1;
             nextPageBtn.disabled = currentPage === totalPages;
             allPageBtn.disabled = false;
@@ -779,74 +346,45 @@
         }
     }
 
-    prevPageBtn.addEventListener('click', () => {
-        showAll = false;
-        currentPage--;
-        renderResidentsPage();
-    });
-
-    nextPageBtn.addEventListener('click', () => {
-        showAll = false;
-        currentPage++;
-        renderResidentsPage();
-    });
-
-    allPageBtn.addEventListener('click', () => {
-        showAll = true;
-        renderResidentsPage();
-    });
+    prevPageBtn.addEventListener('click', () => { showAll = false; currentPage--; renderResidentsPage(); });
+    nextPageBtn.addEventListener('click', () => { showAll = false; currentPage++; renderResidentsPage(); });
+    allPageBtn.addEventListener('click', () => { showAll = true; renderResidentsPage(); });
 
     deleteSelectedBtn.addEventListener('click', async () => {
-        if (selectedIds.size === 0) {
-            return;
-        }
-        if (!confirm(`Delete ${selectedIds.size} residents and all their plates?`)) {
-            return;
-        }
+        if (selectedIds.size === 0) return;
+        if (!confirm(`Delete ${selectedIds.size} residents and all their plates?`)) return;
         try {
-            const ids = Array.from(selectedIds);
             const res = await fetch('/residents/bulk-delete', {
                 method: 'POST',
                 headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
-                body: JSON.stringify({ ids })
+                body: JSON.stringify({ ids: Array.from(selectedIds) })
             });
             if (res.ok || res.status === 204) {
-                messageEl.textContent = 'Selected residents deleted ✅';
-                messageEl.className = 'message success';
+                showToast('Selected residents deleted', 'success');
                 selectedIds.clear();
                 await loadResidents();
             } else {
-                messageEl.textContent = 'Error deleting selected residents: ' + res.status;
-                messageEl.className = 'message error';
+                showToast('Error deleting: ' + res.status, 'error');
             }
         } catch (err) {
-            messageEl.textContent = 'Network error: ' + err.message;
-            messageEl.className = 'message error';
+            showToast('Network error: ' + err.message, 'error');
         }
     });
 
     // Export to Excel
     exportExcelBtn.addEventListener('click', async () => {
-        exportExcelBtn.disabled = true;
-        exportExcelBtn.textContent = '⏳ Exporting...';
-
+        setBtnLoading(exportExcelBtn, true, 'Exporting...');
         try {
             const response = await fetch('/residents/export/excel', { headers: getAuthHeaders() });
-            if (!response.ok) {
-                throw new Error('Export failed: ' + response.status);
-            }
+            if (!response.ok) throw new Error('Export failed: ' + response.status);
 
-            // Get filename from Content-Disposition header or use default
             const contentDisposition = response.headers.get('Content-Disposition');
             let filename = 'residents.xlsx';
             if (contentDisposition) {
                 const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (match && match[1]) {
-                    filename = match[1].replace(/['"]/g, '');
-                }
+                if (match && match[1]) filename = match[1].replace(/['"]/g, '');
             }
 
-            // Download the file
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -857,14 +395,11 @@
             window.URL.revokeObjectURL(url);
             a.remove();
 
-            messageEl.textContent = 'Excel exported successfully ✅';
-            messageEl.className = 'message success';
+            showToast('Excel exported successfully', 'success');
         } catch (err) {
-            messageEl.textContent = 'Export failed: ' + err.message;
-            messageEl.className = 'message error';
+            showToast('Export failed: ' + err.message, 'error');
         } finally {
-            exportExcelBtn.disabled = false;
-            exportExcelBtn.textContent = '📥 Export Excel';
+            setBtnLoading(exportExcelBtn, false, 'Export Excel');
         }
     });
 

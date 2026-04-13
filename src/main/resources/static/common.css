@@ -316,10 +316,8 @@
     to { transform: scale(1); }
 }
 
-/* Admin-only elements: hidden by default */
-.admin-only {
-    display: none;
-}
+/* Admin-only elements: hidden by default via inline style="display:none;"
+   JS (loadCurrentUser) clears the inline style to reveal them for admins. */
 
 /* Awesomplete overrides for Tailwind pages */
 .awesomplete > ul {

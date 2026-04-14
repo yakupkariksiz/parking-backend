@@ -181,6 +181,9 @@ build/
 ### VS Code ###
 .vscode/
 
+### Spring Boot dev profile (contains local secrets) ###
+src/main/resources/application-dev.properties
+
 ### Some additional ignores (sort later)
 *.DS_Store
 *.sw?

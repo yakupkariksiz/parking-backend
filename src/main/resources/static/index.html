@@ -414,8 +414,8 @@
             return;
         }
         selectedSide = value;
-        const stored = loadStoredIndexForSide(selectedSide);
-        currentIndex = (stored && stored > 0) ? stored + 1 : 1;
+        currentIndex = 1;
+        storeIndexForSide(selectedSide, currentIndex);
         updateSlotUI();
         sideOverlay.classList.remove('show');
     });

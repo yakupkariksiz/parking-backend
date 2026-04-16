@@ -226,7 +226,10 @@
                         list: allPlatesUpper,
                         minChars: 1,
                         maxItems: 10,
-                        autoFirst: true
+                        autoFirst: true,
+                        filter: function(text, input) {
+                            return text.value.toUpperCase().startsWith(input.toUpperCase());
+                        }
                     });
                 } else {
                     awesomplete.list = allPlatesUpper;

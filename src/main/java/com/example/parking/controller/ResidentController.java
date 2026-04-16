@@ -1,5 +1,6 @@
 package com.example.parking.controller;
 
+import com.example.parking.dto.BulkImportResultResponse;
 import com.example.parking.dto.ResidentBulkDeleteRequest;
 import com.example.parking.dto.ResidentPlatesRequest;
 import com.example.parking.dto.ResidentWithPlatesResponse;
@@ -9,11 +10,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/residents")
@@ -51,6 +54,18 @@ public class ResidentController {
     public ResponseEntity<Void> bulkDelete(@RequestBody ResidentBulkDeleteRequest request) {
         residentService.deleteResidents(request.ids());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/bulk-import")
+    public ResponseEntity<?> bulkImport(@RequestParam("file") MultipartFile file) {
+        try {
+            BulkImportResultResponse result = residentService.bulkImportFromFile(file);
+            return ResponseEntity.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (RuntimeException | IOException e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/export/excel")

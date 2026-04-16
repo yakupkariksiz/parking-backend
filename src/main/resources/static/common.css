@@ -338,3 +338,13 @@
     background: #e0e7ff !important;
     color: #4338ca !important;
 }
+
+.awesomplete mark {
+    background: #c7d2fe !important;
+    color: #3730a3 !important;
+}
+
+.awesomplete li:hover mark, .awesomplete li[aria-selected="true"] mark {
+    background: #a5b4fc !important;
+    color: #3730a3 !important;
+}

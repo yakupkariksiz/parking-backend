@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Audit Log – Parking Scanner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/common.css">
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 min-h-screen">
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Page header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-900">Audit Log</h1>
+        <p class="text-sm text-slate-500 mt-1">Track all system actions — logins, scans, resident and user changes.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 mb-5 flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Event Type</label>
+            <select id="filterEventType" class="form-select text-sm min-w-[160px]">
+                <option value="">All events</option>
+                <option value="LOGIN_SUCCESS">Login success</option>
+                <option value="LOGIN_FAILURE">Login failure</option>
+                <option value="SCAN">Scan</option>
+                <option value="RESIDENT_CREATE">Resident create</option>
+                <option value="RESIDENT_UPDATE">Resident update</option>
+                <option value="RESIDENT_DELETE">Resident delete</option>
+                <option value="USER_CREATE">User create</option>
+                <option value="USER_UPDATE">User update</option>
+                <option value="USER_DELETE">User delete</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Username</label>
+            <input type="text" id="filterUsername" placeholder="Filter by user…" class="form-input text-sm w-44">
+        </div>
+        <button id="applyFiltersBtn" class="btn-primary btn-press text-sm">Apply</button>
+        <button id="clearFiltersBtn" class="btn-secondary btn-press text-sm">Clear</button>
+        <div class="ml-auto flex items-center gap-2 text-xs text-slate-400" id="resultSummary"></div>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div id="tableContainer">
+            <div class="flex items-center justify-center gap-3 py-16 text-slate-400">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span class="text-sm">Loading audit log…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between mt-4 text-sm text-slate-500" id="paginationBar" style="display:none!important;">
+        <button id="prevBtn" class="btn-secondary btn-press text-sm disabled:opacity-40" disabled>← Previous</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" class="btn-secondary btn-press text-sm disabled:opacity-40" disabled>Next →</button>
+    </div>
+
+</div>
+
+<script src="/common.js"></script>
+<script>
+    requireAuth();
+    requireAdmin();
+    renderNavDrawer('audit');
+    loadCurrentUser();
+
+    const PAGE_SIZE = 50;
+    let currentPage = 0;
+    let totalPages = 0;
+    let activeEventType = '';
+    let activeUsername = '';
+
+    // Badge color map
+    const badgeClasses = {
+        LOGIN_SUCCESS:    'bg-emerald-100 text-emerald-700',
+        LOGIN_FAILURE:    'bg-rose-100 text-rose-700',
+        SCAN:             'bg-indigo-100 text-indigo-700',
+        RESIDENT_CREATE:  'bg-sky-100 text-sky-700',
+        RESIDENT_UPDATE:  'bg-amber-100 text-amber-700',
+        RESIDENT_DELETE:  'bg-orange-100 text-orange-700',
+        USER_CREATE:      'bg-violet-100 text-violet-700',
+        USER_UPDATE:      'bg-purple-100 text-purple-700',
+        USER_DELETE:      'bg-red-100 text-red-700',
+    };
+
+    const badgeLabel = {
+        LOGIN_SUCCESS:    'Login',
+        LOGIN_FAILURE:    'Login Fail',
+        SCAN:             'Scan',
+        RESIDENT_CREATE:  'Resident +',
+        RESIDENT_UPDATE:  'Resident ~',
+        RESIDENT_DELETE:  'Resident −',
+        USER_CREATE:      'User +',
+        USER_UPDATE:      'User ~',
+        USER_DELETE:      'User −',
+    };
+
+    function formatTimestamp(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return d.toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+    }
+
+    function badge(eventType) {
+        const cls = badgeClasses[eventType] || 'bg-slate-100 text-slate-600';
+        const label = badgeLabel[eventType] || eventType;
+        return `<span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${cls}">${label}</span>`;
+    }
+
+    async function loadAuditLog(page = 0) {
+        const container = document.getElementById('tableContainer');
+        showSpinner(container, 'Loading audit log…');
+
+        const params = new URLSearchParams({ page, size: PAGE_SIZE });
+        if (activeEventType) params.set('eventType', activeEventType);
+        if (activeUsername)  params.set('username', activeUsername);
+
+        try {
+            const res = await fetch('/api/admin/audit?' + params.toString(), {
+                headers: getAuthHeaders()
+            });
+            if (!checkAuth(res)) return;
+            if (!res.ok) {
+                container.innerHTML = `<p class="text-center text-rose-500 py-12 text-sm">Failed to load audit log.</p>`;
+                return;
+            }
+
+            const data = await res.json();
+            currentPage = data.number;
+            totalPages  = data.totalPages;
+            const total = data.totalElements;
+
+            // Summary
+            document.getElementById('resultSummary').textContent =
+                total === 0 ? 'No results' : `${total.toLocaleString()} event${total !== 1 ? 's' : ''}`;
+
+            // Pagination
+            const paginationBar = document.getElementById('paginationBar');
+            const pageInfo      = document.getElementById('pageInfo');
+            const prevBtn       = document.getElementById('prevBtn');
+            const nextBtn       = document.getElementById('nextBtn');
+
+            if (totalPages > 1) {
+                paginationBar.style.removeProperty('display');
+                pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+                prevBtn.disabled = currentPage === 0;
+                nextBtn.disabled = currentPage >= totalPages - 1;
+            } else {
+                paginationBar.style.setProperty('display', 'none', 'important');
+            }
+
+            if (data.content.length === 0) {
+                container.innerHTML = `
+                    <div class="py-16 text-center text-slate-400 text-sm">
+                        No audit events found.
+                    </div>`;
+                return;
+            }
+
+            // Build table
+            const table = document.createElement('table');
+            table.className = 'data-table w-full';
+
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th class="w-44">Timestamp</th>
+                        <th class="w-32">Event</th>
+                        <th class="w-28">User</th>
+                        <th>Action</th>
+                        <th class="w-32">IP</th>
+                    </tr>
+                </thead>`;
+
+            const tbody = document.createElement('tbody');
+            data.content.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-xs text-slate-500 whitespace-nowrap">${formatTimestamp(entry.timestamp)}</td>
+                    <td>${badge(entry.eventType)}</td>
+                    <td class="text-xs font-mono text-slate-600">${entry.username || '<span class="text-slate-300">—</span>'}</td>
+                    <td class="text-xs text-slate-700">${escapeHtml(entry.action || '')}</td>
+                    <td class="text-xs font-mono text-slate-400">${entry.clientIp || '—'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+
+            container.innerHTML = '';
+            container.appendChild(table);
+
+        } catch (err) {
+            container.innerHTML = `<p class="text-center text-rose-500 py-12 text-sm">Error: ${escapeHtml(err.message)}</p>`;
+        }
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    document.getElementById('applyFiltersBtn').addEventListener('click', () => {
+        activeEventType = document.getElementById('filterEventType').value;
+        activeUsername  = document.getElementById('filterUsername').value.trim();
+        currentPage = 0;
+        loadAuditLog(0);
+    });
+
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+        document.getElementById('filterEventType').value = '';
+        document.getElementById('filterUsername').value  = '';
+        activeEventType = '';
+        activeUsername  = '';
+        currentPage = 0;
+        loadAuditLog(0);
+    });
+
+    document.getElementById('filterUsername').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('applyFiltersBtn').click();
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentPage > 0) loadAuditLog(currentPage - 1);
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        if (currentPage < totalPages - 1) loadAuditLog(currentPage + 1);
+    });
+
+    loadAuditLog(0);
+</script>
+
+</body>
+</html>

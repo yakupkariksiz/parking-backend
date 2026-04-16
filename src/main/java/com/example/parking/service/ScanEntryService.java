@@ -1,12 +1,13 @@
 package com.example.parking.service;
 
 import com.example.parking.dto.ScanEntryRequest;
+import com.example.parking.event.AuditEventPublisher;
+import com.example.parking.event.EventType;
 import com.example.parking.model.ScanEntry;
 import com.example.parking.model.ScanSession;
 import com.example.parking.repository.ScanEntryRepository;
 import com.example.parking.repository.ScanSessionRepository;
 import com.example.parking.repository.VehicleRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,22 +22,22 @@ public class ScanEntryService {
     private final VehicleRepository vehicleRepository;
     private final ScanSessionRepository scanSessionRepository;
     private final OutsiderPlateService outsiderPlateService;
-    private final AuditService auditService;
+    private final AuditEventPublisher auditEventPublisher;
 
     public ScanEntryService(ScanEntryRepository scanEntryRepository,
                             VehicleRepository vehicleRepository,
                             ScanSessionRepository scanSessionRepository,
                             OutsiderPlateService outsiderPlateService,
-                            AuditService auditService) {
+                            AuditEventPublisher auditEventPublisher) {
         this.scanEntryRepository = scanEntryRepository;
         this.vehicleRepository = vehicleRepository;
         this.scanSessionRepository = scanSessionRepository;
         this.outsiderPlateService = outsiderPlateService;
-        this.auditService = auditService;
+        this.auditEventPublisher = auditEventPublisher;
     }
 
     @Transactional
-    public void createScanEntry(ScanEntryRequest request, HttpServletRequest httpRequest) {
+    public void createScanEntry(ScanEntryRequest request) {
         String normalizedPlate = request.licensePlate()
                 .trim()
                 .toUpperCase();
@@ -73,10 +74,9 @@ public class ScanEntryService {
 
         scanEntryRepository.save(entry);
 
-        // entry kaydedildikten hemen sonra:
-        String action = "Scanned plate " + normalizedPlate + " at location " + location
+        String action = "Scanned plate " + normalizedPlate + " at " + location
                 + (isResident ? " (resident)" : " (outsider)");
-        auditService.audit(action, httpRequest);
+        auditEventPublisher.publish(EventType.SCAN, action);
 
         log.info("Successfully created scan entry for {} at location {}", normalizedPlate, location);
     }

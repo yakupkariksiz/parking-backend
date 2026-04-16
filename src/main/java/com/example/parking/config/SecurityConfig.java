@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/stats.html",
                                 "/occupancy.html",
                                 "/users.html",
+                                "/audit.html",
                                 "/set-password.html",
                                 "/css/**", "/js/**", "/common.css", "/common.js",
                                 "/api/auth/login",

@@ -27,11 +27,27 @@ public class AuditController {
     @GetMapping
     public ResponseEntity<?> listAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "50") int size) {
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String eventType,
+            @RequestParam(required = false) String username) {
         try {
             size = Math.min(size, 200);
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"));
-            Page<AuditLog> result = auditService.listAll(pageable);
+
+            boolean hasEventType = eventType != null && !eventType.isBlank();
+            boolean hasUsername = username != null && !username.isBlank();
+
+            Page<AuditLog> result;
+            if (hasEventType && hasUsername) {
+                result = auditService.listByEventTypeAndUsername(eventType.trim(), username.trim(), pageable);
+            } else if (hasEventType) {
+                result = auditService.listByEventType(eventType.trim(), pageable);
+            } else if (hasUsername) {
+                result = auditService.listByUsername(username.trim(), pageable);
+            } else {
+                result = auditService.listAll(pageable);
+            }
+
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

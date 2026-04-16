@@ -3,11 +3,14 @@ package com.example.parking.service;
 import com.example.parking.dto.CreateUserRequest;
 import com.example.parking.dto.UpdateUserRequest;
 import com.example.parking.dto.UserResponse;
+import com.example.parking.event.AuditEventPublisher;
+import com.example.parking.event.EventType;
 import com.example.parking.model.AppUser;
 import com.example.parking.repository.AppUserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -15,10 +18,14 @@ public class UserManagementService {
 
     private final AppUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditEventPublisher auditEventPublisher;
 
-    public UserManagementService(AppUserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserManagementService(AppUserRepository userRepository,
+                                 PasswordEncoder passwordEncoder,
+                                 AuditEventPublisher auditEventPublisher) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditEventPublisher = auditEventPublisher;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -61,6 +68,10 @@ public class UserManagementService {
         }
 
         userRepository.save(user);
+
+        auditEventPublisher.publish(EventType.USER_CREATE,
+                "Created user '" + request.username() + "' with role " + role);
+
         return toResponse(user);
     }
 
@@ -68,13 +79,17 @@ public class UserManagementService {
         AppUser user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
 
+        List<String> changes = new ArrayList<>();
+
         if (request.role() != null) {
             if (!request.role().equals("ROLE_ADMIN") && !request.role().equals("ROLE_USER")) {
                 throw new IllegalArgumentException("Role must be ROLE_ADMIN or ROLE_USER");
             }
-            // Prevent admin from removing their own admin role
             if (user.getUsername().equals(currentUsername) && !request.role().equals("ROLE_ADMIN")) {
                 throw new IllegalArgumentException("Cannot remove your own admin role");
+            }
+            if (!request.role().equals(user.getRole())) {
+                changes.add("role changed to " + request.role());
             }
             user.setRole(request.role());
         }
@@ -89,21 +104,30 @@ public class UserManagementService {
             } else {
                 user.setEmail(null);
             }
+            changes.add("email updated");
         }
 
         if (request.password() != null && !request.password().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.password()));
+            changes.add("password changed");
         }
 
         if (request.enabled() != null) {
-            // Prevent admin from disabling themselves
             if (user.getUsername().equals(currentUsername) && !request.enabled()) {
                 throw new IllegalArgumentException("Cannot disable your own account");
+            }
+            if (!request.enabled().equals(user.isEnabled())) {
+                changes.add(request.enabled() ? "account enabled" : "account disabled");
             }
             user.setEnabled(request.enabled());
         }
 
         userRepository.save(user);
+
+        String summary = changes.isEmpty() ? "no changes" : String.join(", ", changes);
+        auditEventPublisher.publish(EventType.USER_UPDATE,
+                "Updated user '" + user.getUsername() + "': " + summary);
+
         return toResponse(user);
     }
 
@@ -115,7 +139,11 @@ public class UserManagementService {
             throw new IllegalArgumentException("Cannot delete your own account");
         }
 
+        String deletedUsername = user.getUsername();
         userRepository.deleteById(id);
+
+        auditEventPublisher.publish(EventType.USER_DELETE,
+                "Deleted user '" + deletedUsername + "'");
     }
 
     private UserResponse toResponse(AppUser user) {

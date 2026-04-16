@@ -10,4 +10,11 @@ public interface AuditLogRepository extends Repository<AuditLog, Long> {
     AuditLog save(AuditLog auditLog);
 
     Page<AuditLog> findAll(Pageable pageable);
+
+    Page<AuditLog> findByEventType(String eventType, Pageable pageable);
+
+    Page<AuditLog> findByUsernameContainingIgnoreCase(String username, Pageable pageable);
+
+    Page<AuditLog> findByEventTypeAndUsernameContainingIgnoreCase(
+            String eventType, String username, Pageable pageable);
 }
